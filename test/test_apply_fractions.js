@@ -23,7 +23,6 @@ var hpmsgrids={'2008':{}}
 
 var config_okay = require('config_okay')
 
-var superagent = require('superagent')
 var date = new Date()
 var test_db_unique = date.getHours()+'-'
                    + date.getMinutes()+'-'
@@ -120,7 +119,7 @@ describe('apply fractions route',function(){
                   ,'cell_id':'189_72'
                   ,'year':2008
                   }
-        var handler = routes.fractions_handler(hpmsgrids)
+        var handler = routes.fractions_handler(hpmsgrids['2008'])
         queue()
         .defer(handler,task)
         .await(function(e,d){

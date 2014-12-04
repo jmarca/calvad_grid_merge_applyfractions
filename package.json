@@ -16,8 +16,9 @@
     "url": "https://github.com/jmarca/calvad_grid_merge_applyfractions/issues"
   },
   "devDependencies": {
-    "should": "~2.0.2",
-    "superagent": "^0.21.0"
+    "express": "^4.10.4",
+    "request": "^2.49.0",
+    "should": "~2.0.2"
   },
   "dependencies": {
     "calvad_areas": "git://github.com/jmarca/calvad_areas.git",
