@@ -1,0 +1,36 @@
+{
+  "name": "calvad_grid_merge_applyfractions",
+  "version": "0.0.1",
+  "description": "Code extracted from calvad_grid_merge for accessing couchdb data",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jmarca/calvad_grid_merge_applyfractions"
+  },
+  "author": "James E. Marca",
+  "license": "GPL v2",
+  "bugs": {
+    "url": "https://github.com/jmarca/calvad_grid_merge_applyfractions/issues"
+  },
+  "devDependencies": {
+    "should": "~2.0.2",
+    "superagent": "^0.21.0"
+  },
+  "dependencies": {
+    "calvad_areas": "git://github.com/jmarca/calvad_areas.git",
+    "calvad_compute_aadt": "git://github.com/jmarca/calvad_compute_aadt.git",
+    "config_okay": "0.0.2",
+    "couch_check_state": "git://github.com/jmarca/couch_check_state.git",
+    "couch_set_state": "git://github.com/jmarca/couch_set_state.git",
+    "couchdb_bulkdoc_saver": "git://github.com/jmarca/couchdb_bulkdoc_saver.git",
+    "couchdb_get_views": "git://github.com/jmarca/couchdb_get_views.git",
+    "couchdb_put_doc": "git://github.com/jmarca/couchdb_put_doc.git",
+    "lodash": "",
+    "pg": "~2.8.2",
+    "queue-async": "^1.0.7",
+    "should": "^4.3.0"
+  }
+}
