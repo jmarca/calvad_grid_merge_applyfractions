@@ -17,13 +17,13 @@
   },
   "devDependencies": {
     "express": "^4.10.4",
-    "request": "^2.49.0",
-    "should": "~2.0.2"
+    "request": "",
+    "should": ""
   },
   "dependencies": {
     "calvad_areas": "git://github.com/jmarca/calvad_areas.git",
     "calvad_compute_aadt": "git://github.com/jmarca/calvad_compute_aadt.git",
-    "config_okay": "0.0.2",
+    "config_okay": "",
     "couch_check_state": "git://github.com/jmarca/couch_check_state.git",
     "couch_set_state": "git://github.com/jmarca/couch_set_state.git",
     "couchdb_bulkdoc_saver": "git://github.com/jmarca/couchdb_bulkdoc_saver.git",
@@ -31,7 +31,7 @@
     "couchdb_put_doc": "git://github.com/jmarca/couchdb_put_doc.git",
     "lodash": "",
     "pg": "~2.8.2",
-    "queue-async": "^1.0.7",
-    "should": "^4.3.0"
+    "queue-async": "",
+    "should": ""
   }
 }
