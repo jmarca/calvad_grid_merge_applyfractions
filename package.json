@@ -32,6 +32,8 @@
     "lodash": "",
     "pg": "~2.8.2",
     "queue-async": "",
-    "should": ""
+      "should": "",
+      "calvad_grid_merge_sqlquery": "git://github.com/jmarca/calvad_grid_merge_sqlquery",
+      "calvad_grid_merge_couchdbquery": "git://github.com/jmarca/calvad_grid_merge_couchdbquery"
   }
 }
