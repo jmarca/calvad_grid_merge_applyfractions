@@ -18,7 +18,8 @@
   "devDependencies": {
     "express": "^4.10.4",
     "request": "",
-    "should": ""
+    "should": "",
+    "superagent": "^0.21.0"
   },
   "dependencies": {
     "calvad_areas": "git://github.com/jmarca/calvad_areas.git",
@@ -32,8 +33,8 @@
     "lodash": "",
     "pg": "~2.8.2",
     "queue-async": "",
-      "should": "",
-      "calvad_grid_merge_sqlquery": "git://github.com/jmarca/calvad_grid_merge_sqlquery",
-      "calvad_grid_merge_couchdbquery": "git://github.com/jmarca/calvad_grid_merge_couchdbquery"
+    "should": "",
+    "calvad_grid_merge_sqlquery": "git://github.com/jmarca/calvad_grid_merge_sqlquery",
+    "calvad_grid_merge_couchdbquery": "git://github.com/jmarca/calvad_grid_merge_couchdbquery"
   }
 }

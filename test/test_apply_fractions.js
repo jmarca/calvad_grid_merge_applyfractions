@@ -13,7 +13,7 @@ var _ = require('lodash')
 var queue = require("queue-async")
 
 
-var config={}
+
 var utils = require('./utils')
 var path = require('path')
 var rootdir = path.normalize(__dirname)
@@ -29,26 +29,25 @@ var test_db_unique = date.getHours()+'-'
                    + date.getSeconds()+'-'
                    + date.getMilliseconds()
 
-var task
 
+var date = new Date()
+var test_db_unique = date.getHours()+'-'
+                   + date.getMinutes()+'-'
+                   + date.getSeconds()+'-'
+                   + date.getMilliseconds()
+var options = {}
 before(function(done){
     config_okay(config_file,function(err,c){
-        config.couchdb =_.clone(c.couchdb,true)
-        var date = new Date()
-        var test_db_unique = date.getHours()+'-'
-                           + date.getMinutes()+'-'
-                           + date.getSeconds()+'-'
-                           + date.getMilliseconds()
+        options.couchdb =_.clone(c.couchdb,true)
+        options.couchdb.grid_merge_couchdbquery_hpms_db += test_db_unique
+        options.couchdb.grid_merge_couchdbquery_detector_db += test_db_unique
+        options.couchdb.grid_merge_couchdbquery_state_db += test_db_unique
 
-        config.couchdb.hpms_db += test_db_unique
-        config.couchdb.detector_db += test_db_unique
-        config.couchdb.state_db += test_db_unique
-        // dummy up a done grid and a not done grid in a test db
-        task = {'options':config};
         queue()
         .defer(fs.readFile,hpmsfile,{'encoding':'utf8'})
-        .defer(utils.demo_db_before(config))
+        .defer(utils.demo_db_before(options))
         .await(function(e,hpmsdata,blahblah){
+            should.not.exist(e)
             hpmsgrids['2008'] = routes.process_hpms_data(JSON.parse(hpmsdata))
             return done()
         })
@@ -56,16 +55,15 @@ before(function(done){
     })
     return null
 })
-after(utils.demo_db_after(config))
+after(utils.demo_db_after(options))
 
 describe('apply fractions',function(){
 
     it('should work',function(done){
-        var task ={'options':config
-                  ,'cell_id':'189_72'
+        var task ={'cell_id':'189_72'
                   ,'year':2008
                   }
-        task.options = config
+        task.options = options
         var q = queue(4);
         q.defer(get_detector_fractions,task)
         q.defer(get_hpms_fractions,task)
@@ -115,7 +113,7 @@ describe('apply fractions',function(){
 
 describe('apply fractions route',function(){
     it('should work',function(done){
-        var task ={'options':config
+        var task ={'options':options
                   ,'cell_id':'189_72'
                   ,'year':2008
                   }

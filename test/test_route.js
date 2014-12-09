@@ -13,7 +13,6 @@ var _ = require('lodash')
 var queue = require("queue-async")
 
 
-var config={}
 var utils = require('./utils')
 var path = require('path')
 var rootdir = path.normalize(__dirname)
@@ -39,23 +38,24 @@ var testhost = env.TEST_HOST || '127.0.0.1'
 var testport = env.TEST_PORT || 3000
 testport += 3
 
+var date = new Date()
+var test_db_unique = date.getHours()+'-'
+                   + date.getMinutes()+'-'
+                   + date.getSeconds()+'-'
+                   + date.getMilliseconds()
+var options = {}
+
 before(function(done){
     config_okay(config_file,function(err,c){
-        config.couchdb =_.clone(c.couchdb,true)
-        var date = new Date()
-        var test_db_unique = date.getHours()+'-'
-                           + date.getMinutes()+'-'
-                           + date.getSeconds()+'-'
-                           + date.getMilliseconds()
-
-        config.couchdb.hpms_db += test_db_unique
-        config.couchdb.detector_db += test_db_unique
-        config.couchdb.state_db += test_db_unique
+        options.couchdb =_.clone(c.couchdb,true)
+        options.couchdb.grid_merge_couchdbquery_hpms_db += test_db_unique
+        options.couchdb.grid_merge_couchdbquery_detector_db += test_db_unique
+        options.couchdb.grid_merge_couchdbquery_state_db += test_db_unique
 
         var app = express()
         queue()
-        .defer(routes.grid_hpms_hourly_handler,config,[hpmsfile],app)
-        .defer(utils.demo_db_before(config))
+        .defer(routes.grid_hpms_hourly_handler,options,[hpmsfile],app)
+        .defer(utils.demo_db_before(options))
         .await(function(e){
             should.not.exist(e)
             app.listen(testport,testhost,done)
@@ -65,7 +65,7 @@ before(function(done){
     })
     return null
 })
-after(utils.demo_db_after(config))
+after(utils.demo_db_after(options))
 
 var server_host = 'http://'+testhost + ':'+testport
 
