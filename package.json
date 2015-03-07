@@ -16,6 +16,7 @@
     "url": "https://github.com/jmarca/calvad_grid_merge_applyfractions/issues"
   },
   "devDependencies": {
+    "csv-parse": "0.0.9",
     "express": "^4.10.4",
     "request": "",
     "should": "",
@@ -24,17 +25,18 @@
   "dependencies": {
     "calvad_areas": "git://github.com/jmarca/calvad_areas.git",
     "calvad_compute_aadt": "git://github.com/jmarca/calvad_compute_aadt.git",
+    "calvad_grid_merge_couchdbquery": "git://github.com/jmarca/calvad_grid_merge_couchdbquery",
+    "calvad_grid_merge_sqlquery": "git://github.com/jmarca/calvad_grid_merge_sqlquery",
     "config_okay": "",
     "couch_check_state": "git://github.com/jmarca/couch_check_state.git",
     "couch_set_state": "git://github.com/jmarca/couch_set_state.git",
     "couchdb_bulkdoc_saver": "git://github.com/jmarca/couchdb_bulkdoc_saver.git",
     "couchdb_get_views": "git://github.com/jmarca/couchdb_get_views.git",
     "couchdb_put_doc": "git://github.com/jmarca/couchdb_put_doc.git",
+    "csv-stringify": "0.0.6",
     "lodash": "",
     "pg": "~2.8.2",
     "queue-async": "",
-    "should": "",
-    "calvad_grid_merge_sqlquery": "git://github.com/jmarca/calvad_grid_merge_sqlquery",
-    "calvad_grid_merge_couchdbquery": "git://github.com/jmarca/calvad_grid_merge_couchdbquery"
+    "should": ""
   }
 }

@@ -3,6 +3,8 @@ var should=require('should')
 var reduce = require('../lib/reduce')
 var routes = require('../lib/routes.js')
 
+var csvparser = require('csv-parse')
+
 var queries = require('calvad_grid_merge_sqlquery')
 var hourlies = require('calvad_grid_merge_couchdbquery')
 var get_hpms_fractions = hourlies.get_hpms_fractions
@@ -44,6 +46,7 @@ var test_db_unique = date.getHours()+'-'
                    + date.getSeconds()+'-'
                    + date.getMilliseconds()
 var options = {}
+
 
 before(function(done){
     config_okay(config_file,function(err,c){
@@ -96,6 +99,44 @@ describe('server route',function(){
                                         'sum_single_unit_mt',
                                         'sum_vmt',
                                         'sum_combination_mt'])
+                                }
+
+                            });
+
+
+                        });
+                        return done()
+
+                    })
+        return null;
+    })
+    it('should work for csv too',function(done){
+        request.get(server_host+'/hpms/datahr/2008/189/72.csv'
+                   ,function(e,r,b){
+                        // b is the output memo I want
+
+                        csvparser(b,{columns:true},function(err,memo){
+
+                            memo.should.have.lengthOf(2976)
+                            // not really
+
+                            _.each(memo,function(v,ts){
+                                v.should.have.keys([
+                                    'timestamp'
+                                  ,'roadway'
+                                  ,'sum vehicle miles traveled'
+                                  ,'sum single unit miles traveled'
+                                  ,'sum combination miles traveled'
+                                  ,'sum not heavy heavy-duty miles traveled'
+                                  ,'sum heavy heavy-duty miles traveled'
+                                  ,'sum lane miles'
+                                ])
+                                if(v.roadway === 'detector_based'){
+                                    v['sum single unit miles traveled'].should.eql('')
+                                    v['sum combination miles traveled'].should.eql('')
+                                }else{
+                                    v['sum not heavy heavy-duty miles traveled'].should.eql('')
+                                    v['sum heavy heavy-duty miles traveled'].should.eql('')
                                 }
 
                             });
