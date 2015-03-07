@@ -117,7 +117,7 @@ describe('server route',function(){
 
                         csvparser(b,{columns:true},function(err,memo){
 
-                            memo.should.have.lengthOf(744)
+                            memo.should.have.lengthOf(2976)
                             // not really
 
                             _.each(memo,function(v,ts){
@@ -131,6 +131,13 @@ describe('server route',function(){
                                   ,'sum heavy heavy-duty miles traveled'
                                   ,'sum lane miles'
                                 ])
+                                if(v.roadway === 'detector_based'){
+                                    v['sum single unit miles traveled'].should.eql('')
+                                    v['sum combination miles traveled'].should.eql('')
+                                }else{
+                                    v['sum not heavy heavy-duty miles traveled'].should.eql('')
+                                    v['sum heavy heavy-duty miles traveled'].should.eql('')
+                                }
 
                             });
 
