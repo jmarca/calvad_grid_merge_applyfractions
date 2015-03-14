@@ -16,11 +16,11 @@
     "url": "https://github.com/jmarca/calvad_grid_merge_applyfractions/issues"
   },
   "devDependencies": {
-    "csv-parse": "0.0.9",
+    "csv-parse": "",
     "express": "^4.10.4",
     "request": "",
     "should": "",
-    "superagent": "^0.21.0"
+    "superagent": ""
   },
   "dependencies": {
     "calvad_areas": "git://github.com/jmarca/calvad_areas.git",
@@ -35,7 +35,7 @@
     "couchdb_put_doc": "git://github.com/jmarca/couchdb_put_doc.git",
     "csv-stringify": "0.0.6",
     "lodash": "",
-    "pg": "~2.8.2",
+    "optimist": "^0.6.1",
     "queue-async": "",
     "should": ""
   }
