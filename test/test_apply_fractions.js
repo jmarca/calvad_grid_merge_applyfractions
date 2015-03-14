@@ -30,11 +30,6 @@ var test_db_unique = date.getHours()+'-'
                    + date.getMilliseconds()
 
 
-var date = new Date()
-var test_db_unique = date.getHours()+'-'
-                   + date.getMinutes()+'-'
-                   + date.getSeconds()+'-'
-                   + date.getMilliseconds()
 var options = {}
 before(function(done){
     config_okay(config_file,function(err,c){

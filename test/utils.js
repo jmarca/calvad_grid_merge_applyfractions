@@ -52,6 +52,7 @@ function post_file(file,couch,doclen,cb){
                      })
     doclen += docs.length
 
+
     superagent.post(couch+'/_bulk_docs')
     .type('json')
     .send({"docs":docs})
@@ -124,7 +125,7 @@ function load_detector(task,cb){
 function demo_db_before(config){
     return function(done){
         var task = {options:config}
-        // dummy up a done grid and a not done grid in a test db
+        //console.log('dummy up a done grid and a not done grid in a test db')
         var dbs = [task.options.couchdb.grid_merge_couchdbquery_detector_db
                   ,task.options.couchdb.grid_merge_couchdbquery_hpms_db
                   ,task.options.couchdb.grid_merge_couchdbquery_state_db
@@ -133,11 +134,10 @@ function demo_db_before(config){
         var q = queue(1)
         dbs.forEach(function(db){
             if(!db) return null
-
             q.defer(create_tempdb,task,db)
             return null
         })
-        q.await(function(e,a,b,c){
+        q.await(function(e){
             should.not.exist(e)
             queue()
             .defer(load_hpms,task)
