@@ -24,6 +24,7 @@ var routes = require('./lib/routes.js')
 var flatten_records = require('./lib/flatten').flatten_records
 var cdb_interactions = require('calvad_grid_merge_couchdbquery')
 var put_results_doc = cdb_interactions.put_results_doc
+var areatypes=['county','airbasin','airdistrict']
 
 // make this a command line thing
 
@@ -52,9 +53,12 @@ var argv = optimist
                          ,'type': "boolean"
                          ,'default': false
                          })
-           .options("hpms",{'alias':'hpmsfiles'
+           .options("hpms",{'alias':'hpmsfile'
                         ,'describe':'previously formatted hpmsYEAR.json files.   Specify multiple files as --hpmsfiles hpms2007.json --hpmsfiles ../some/directory/hpms2008.json and so on.'
                         ,'default':hpmsfiles})
+           .options("area",{'alias':'areatype'
+                        ,'describe':'which area types to process.  defaults to [airbasin,county,airdistrict].  Specify multiple area types as --areatype county --areatype airbasin.  The values should not by anything except values specified in calvad_areas::cellmembership'
+                        ,'default':areatypes})
            .argv
 ;
 if (argv.help){
@@ -67,7 +71,8 @@ if (argv.help){
 
 var options = {statedb:argv.statedb}
 var years = _.flatten([argv.year])
-hpmsfiles = _.flatten([argv.hpmsfiles])
+hpmsfiles = _.flatten([argv.hpmsfile])
+areatypes = _.flatten([argv.areatype])
 
 var jobs = argv.jobs
 
@@ -147,55 +152,61 @@ function reducing_code(tasks,reducing_callback){
     return null
 }
 
-function process_area_year(config,area_type,years,cb){
+function process_area_year(config,area_type,yr,cb){
     // work on one thing at a time here. do multiple jobs inside loop
 
     var q = queue(1)
+    console.log(area_type,yr)
 
-    years.forEach(function(yr){
-
-        var tasks=
-            _.map(grid_records,function(membership,cell_id){
-                return {'cell_id':cell_id
-                       ,'year':yr
-                       ,'options':config
-                       ,'area_type':area_type
-                       ,'area_name':membership[area_type]
-                       }
-            });
-        // how to skip tasks:
-        // tasks = _.filter(tasks,function(t){
-        //             if( t.area_name == 'ALAMEDA' ||
-        //                 t.area_name == 'MENDOCINO'){
-        //                 return false
-        //             }
-        //             return true
-        //         })
-
-        var grouped_tasks = _.groupBy(tasks,function(t){
-                                return t.area_name
-                            })
-
-        _.each(grouped_tasks,function(tasks,group){
-            console.log({'tasks.length':tasks.length})
-            q.defer(reducing_code,tasks)
-            return null
+    var tasks=
+        _.map(grid_records,function(membership,cell_id){
+            return {'cell_id':cell_id
+                   ,'year':yr
+                   ,'options':config
+                   ,'area_type':area_type
+                   ,'area_name':membership[area_type]
+                   }
         });
-        q.await(function(e){
-            console.log('done with work')
-            return cb(e)
-        })
+    console.log(tasks[0])
+    // how to skip tasks:
+    // tasks = _.filter(tasks,function(t){
+    //             if( t.area_name == 'ALAMEDA' ||
+    //                 t.area_name == 'MENDOCINO'){
+    //                 return false
+    //             }
+    //             return true
+    //         })
+
+    var grouped_tasks = _.groupBy(tasks,function(t){
+                            return t.area_name
+                        })
+
+    _.each(grouped_tasks,function(tasks,group){
+        console.log({'tasks.length':tasks.length})
+        q.defer(reducing_code,tasks)
         return null
     });
+    q.await(function(e){
+        console.log('done with work for ',area_type,yr)
+        return cb(e)
+    })
     return null
 
 }
 
-config_okay('config.json',function(err,c){
+var rootdir = path.normalize(__dirname)
+var config_file = rootdir+'/config.json'
+config_okay(config_file,function(err,c){
     var q = queue(1)
+    if(err){throw new Error(err)}
     q.defer(prepwork)
-    q.defer(function(cb){
-        process_area_year(c,'county',years,cb)
+    years.forEach(function(yr){
+        areatypes.forEach(function(areatype){
+            console.log(areatype)
+            q.defer(process_area_year,c,areatype,yr)
+            return null
+        })
+        return null
     })
     return null
 })
