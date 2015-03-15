@@ -11,7 +11,8 @@ var get_hpms_fractions = hourlies.get_hpms_fractions
 var post_process_couch_query = hourlies.post_process_couch_query
 var get_detector_fractions = hourlies.get_detector_fractions
 
-var flatten_records = require('../lib/flatten').flatten_records
+var f = require('../lib/flatten')
+var flatten_records = f.flatten_records
 
 var config_okay = require('config_okay')
 
@@ -113,4 +114,15 @@ describe('flatten',function(){
         })
         return null
     })
+})
+
+describe ('make_id',function(){
+    it('should make an id',function(){
+        should.exist(f.make_id)
+        f.make_id.should.be.a.Function;
+        f.make_id({year:2007,
+                         area_type: 'airbasin',
+                         area_name: 'NORTH COAST' }).should.eql('airbasin_NORTH COAST_2007')
+        return null
+    });
 })
