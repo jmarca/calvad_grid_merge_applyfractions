@@ -21,9 +21,14 @@ var config_okay = require('config_okay')
 
 var reduce = require('./lib/reduce')
 var routes = require('./lib/routes.js')
-var flatten_records = require('./lib/flatten').flatten_records
+var flatten = require('./lib/flatten')
+var flatten_records = flatten.flatten_records
 var cdb_interactions = require('calvad_grid_merge_couchdbquery')
 var put_results_doc = cdb_interactions.put_results_doc
+var check_results_doc = cdb_interactions.check_results_doc
+if(check_results_doc===undefined){
+    croak;
+}
 var areatypes=['county','airbasin','airdistrict']
 
 // make this a command line thing
@@ -53,6 +58,10 @@ var argv = optimist
                          ,'type': "boolean"
                          ,'default': false
                          })
+           .options("recheck", {'describe': "redo all of the area names, not just the ones that aren't stored yet"
+                                ,'type': "boolean"
+                                ,'default': false
+                               })
            .options("hpms",{'alias':'hpmsfile'
                         ,'describe':'previously formatted hpmsYEAR.json files.   Specify multiple files as --hpmsfiles hpms2007.json --hpmsfiles ../some/directory/hpms2008.json and so on.'
                         ,'default':hpmsfiles})
@@ -67,7 +76,7 @@ if (argv.help){
 }
 
 
-
+var recheck=argv.recheck
 
 var options = {statedb:argv.statedb}
 var years = _.flatten([argv.year])
@@ -106,7 +115,6 @@ function reducing_code(tasks,reducing_callback){
     var area_type = tasks[0].area_type
     var area_name = tasks[0].area_name
     var year = tasks[0].year
-    console.log(tasks[0])
     var grid_cells = _.pluck(tasks,'cell_id')
 
     if(hpmsgrids[year]===undefined){
@@ -124,20 +132,44 @@ function reducing_code(tasks,reducing_callback){
 
     finish_task.grid_cells= grid_cells
 
-    var outerq = queue(jobs)
+    var outerq = queue(1)
+
+    var memo = {}
+    function clean_and_compress(item,cb){
+        reduce.reduce(memo,item,function(e,m){
+            //cleanup
+            var c = item.cell_id
+            _.each(item,function(v,k){
+                delete(item[k])
+            });
+            console.log('cleaned '+c)
+
+            return cb(null)
+        });
+        return null;
+    }
 
     tasks.forEach(function(t){
-        outerq.defer(handler,t)
+        outerq.defer(function(cb){
+            handler(t,function(e,t2){
+                console.log('handled '+t2.cell_id)
+                clean_and_compress(t2,cb)
+                return null
+            });
+            return null
+        })
     })
+
     outerq.awaitAll(function(e,results){
 
         // reduce the results
-        finish_task.result =  _.reduce(results
-                                      ,reduce.reduce
-                                      ,{}
-                                      );
+        // finish_task.result =  _.reduce(results
+        //                               ,reduce.reduce
+        //                               ,{}
+        //                               );
+        finish_task.result = memo
         flatten_records(finish_task,function(e,t){
-            console.log('going to save')
+            gconsole.log('going to save')
             put_results_doc({options:options
                             ,doc:t}
                            ,function(e,r){
@@ -155,43 +187,63 @@ function reducing_code(tasks,reducing_callback){
 function process_area_year(config,area_type,yr,cb){
     // work on one thing at a time here. do multiple jobs inside loop
 
-    var q = queue(1)
     console.log(area_type,yr)
-
+    var groups = {}
     var tasks=
         _.map(grid_records,function(membership,cell_id){
-            return {'cell_id':cell_id
+            var t = {'cell_id':cell_id
                    ,'year':yr
                    ,'options':config
                    ,'area_type':area_type
                    ,'area_name':membership[area_type]
                    }
+            groups[flatten.make_id(t)]=t.area_name
+            return t
         });
-    console.log(tasks[0])
-    // how to skip tasks:
-    // tasks = _.filter(tasks,function(t){
-    //             if( t.area_name == 'ALAMEDA' ||
-    //                 t.area_name == 'MENDOCINO'){
-    //                 return false
-    //             }
-    //             return true
-    //         })
-
     var grouped_tasks = _.groupBy(tasks,function(t){
                             return t.area_name
                         })
 
-    _.each(grouped_tasks,function(tasks,group){
-        console.log({'tasks.length':tasks.length})
-        q.defer(reducing_code,tasks)
-        return null
-    });
-    q.await(function(e){
-        console.log('done with work for ',area_type,yr)
-        return cb(e)
-    })
-    return null
+    console.log({'all areas':Object.keys(grouped_tasks)})
 
+    // how to skip tasks:
+    var qgroups = queue()
+
+    if(recheck){
+       qgroups.defer(function(cb){ return cb() })
+    }else{
+        _.forEach(groups,function(area_name,docid){
+            // check if the doc is aready in the db
+            var _c = {options:config}
+            _c.doc={'id':docid}
+            qgroups.defer(function(cb){
+                cdb_interactions.check_results_doc(_c,function(e,r){
+                    if(r){
+                        // truthy r means we're done with this one
+                        console.log('skipping ',docid)
+                        delete grouped_tasks[area_name]
+                    }
+                    return cb()
+                })
+                return null
+            })
+            return null
+        });
+    }
+    qgroups.await(function(e,res){
+        console.log({'going to process ':Object.keys(grouped_tasks)})
+        var q = queue(1)
+        _.each(grouped_tasks,function(tasks,group){
+            console.log({'tasks.length':tasks.length})
+            q.defer(reducing_code,tasks)
+            return null
+        });
+        q.await(function(e){
+            console.log('done with work for ',area_type,yr)
+            return cb(e)
+        })
+        return null
+    })
 }
 
 var rootdir = path.normalize(__dirname)
