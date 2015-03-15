@@ -169,7 +169,7 @@ function reducing_code(tasks,reducing_callback){
         //                               );
         finish_task.result = memo
         flatten_records(finish_task,function(e,t){
-            gconsole.log('going to save')
+            console.log('going to save')
             put_results_doc({options:options
                             ,doc:t}
                            ,function(e,r){
