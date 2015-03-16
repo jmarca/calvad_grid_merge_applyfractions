@@ -126,3 +126,21 @@ describe ('make_id',function(){
         return null
     });
 })
+
+describe ('make_header_array',function(){
+    it('should make a header',function(){
+        should.exist(f.make_header_array)
+        f.make_header_array.should.be.a.Function;
+        var h = f.make_header_array()
+        h.should.eql(['timestamp'
+                      ,'roadway'
+                      ,'sum vehicle miles traveled'
+                      ,'sum single unit miles traveled'
+                      ,'sum not heavy heavy-duty miles traveled'
+                      ,'sum combination miles traveled'
+                      ,'sum heavy heavy-duty miles traveled'
+                      ,'sum lane miles'
+                     ]);
+        return null
+    });
+})
