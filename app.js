@@ -132,7 +132,7 @@ function reducing_code(tasks,reducing_callback){
 
     finish_task.grid_cells= grid_cells
 
-    var outerq = queue(1)
+    var gridq = queue(1)
 
     var memo = {}
     function clean_and_compress(item,cb){
@@ -150,7 +150,7 @@ function reducing_code(tasks,reducing_callback){
     }
 
     tasks.forEach(function(t){
-        outerq.defer(function(cb){
+        gridq.defer(function(cb){
             handler(t,function(e,t2){
                 console.log('handled '+t2.cell_id)
                 clean_and_compress(t2,cb)
@@ -160,13 +160,8 @@ function reducing_code(tasks,reducing_callback){
         })
     })
 
-    outerq.awaitAll(function(e,results){
+    gridq.awaitAll(function(e,results){
 
-        // reduce the results
-        // finish_task.result =  _.reduce(results
-        //                               ,reduce.reduce
-        //                               ,{}
-        //                               );
         finish_task.result = memo
         flatten_records(finish_task,function(e,t){
             console.log('going to save')
