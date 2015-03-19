@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="pandoc">
+  <meta name="author" content="James E. Marca" />
+  <meta name="dcterms.date" content="2015-03-19" />
+  <title>Map-reduce, callbacks, and crashing node.js</title>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" href="/home/james/repos/reveal.js/css/reveal.css"/>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #303030; color: #cccccc; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; }
+td.sourceCode { padding-left: 5px; }
+pre, code { color: #cccccc; background-color: #303030; }
+code > span.kw { color: #f0dfaf; }
+code > span.dt { color: #dfdfbf; }
+code > span.dv { color: #dcdccc; }
+code > span.bn { color: #dca3a3; }
+code > span.fl { color: #c0bed1; }
+code > span.ch { color: #dca3a3; }
+code > span.st { color: #cc9393; }
+code > span.co { color: #7f9f7f; }
+code > span.ot { color: #efef8f; }
+code > span.al { color: #ffcfaf; }
+code > span.fu { color: #efef8f; }
+code > span.er { color: #c3bf9f; }
+  </style>
+  <link rel="stylesheet" href="/home/james/repos/reveal.js/css/theme/sky.css" id="theme">
+  <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+  <script>
+    if( window.location.search.match( /print-pdf/gi ) ) {
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = '/home/james/repos/reveal.js/css/print/pdf.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    }
+  </script>
+  <!--[if lt IE 9]>
+  <script src="/home/james/repos/reveal.js/lib/js/html5shiv.js"></script>
+  <![endif]-->
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+<section>
+    <h1 class="title">Map-reduce, callbacks, and crashing node.js</h1>
+    <h2 class="author">James E. Marca</h2>
+    <h3 class="date">2015-03-19</h3>
+</section>
+
+<section id="overview" class="slide level1">
+<h1>Overview</h1>
+<ul>
+<li>Node is great for systems programming</li>
+<li>But callbacks can be tricky</li>
+<li>It’s easy to get carried away with thousands of callbacks and crash node</li>
+</ul>
+</section>
+<section id="the-use-case" class="slide level1">
+<h1>The use case</h1>
+<ul>
+<li>CalVAD: the California Vehicle Activity Database</li>
+</ul>
+</section>
+<section id="all-the-data" class="slide level1">
+<h1>All the data:</h1>
+<ul>
+<li>loop detectors</li>
+<li>weigh in motion stations</li>
+<li>annual vehicle count surveys</li>
+</ul>
+</section>
+<section class="slide level1">
+
+<figure>
+<img src="figures/ramp_loops.jpg" alt="Loop detector" /><figcaption>Loop detector</figcaption>
+</figure>
+</section>
+<section class="slide level1">
+
+<figure>
+<img src="figures/bendingplate.jpg" alt="WIM bending plate" /><figcaption>WIM bending plate</figcaption>
+</figure>
+</section>
+<section class="slide level1">
+
+<figure>
+<img src="figures/tube.jpg" alt="pneumatic tubes for two-day counts" /><figcaption>pneumatic tubes for two-day counts</figcaption>
+</figure>
+</section>
+<section id="the-problem" class="slide level1">
+<h1>The problem</h1>
+<ul>
+<li>Two day tube counts =&gt; average daily traffic (AADT)</li>
+<li>Model most likely hour, daily variation</li>
+<li>Using loops and WIM detectors</li>
+</ul>
+</section>
+<section id="a-4km-x-4km-grid" class="slide level1">
+<h1>A 4km X 4km grid</h1>
+<ul>
+<li>map roads and highways to grid cells</li>
+<li>model most likely variation from AADT</li>
+<li>by hour (per year)</li>
+<li>by grid cell</li>
+</ul>
+</section>
+<section class="slide level1">
+
+<figure>
+<img src="figures/california_grid4k.png" />
+</figure>
+</section>
+<section class="slide level1">
+
+<figure>
+<img src="figures/california_grid_zoomed_fresno.png" alt="Fresno" /><figcaption>Fresno</figcaption>
+</figure>
+</section>
+<section class="slide level1">
+
+<figure>
+<img src="figures/california_grid_zoomed_bfield.png" alt="Bakersfield" /><figcaption>Bakersfield</figcaption>
+</figure>
+</section>
+<section class="slide level1">
+
+<figure>
+<img src="figures/california_grid_near_sac.png" alt="Modeling task" /><figcaption>Modeling task</figcaption>
+</figure>
+</section>
+<section id="used-r-with-node.js" class="slide level1">
+<h1>used R with node.js</h1>
+<ul>
+<li>marshalled data and jobs using node.js</li>
+<li>spatio-temporal modeling in R</li>
+<li>hourly, grid by grid results stored in CouchDB</li>
+</ul>
+</section>
+<section id="todays-topic-aggregating-step" class="slide level1">
+<h1>Today’s topic: Aggregating step</h1>
+<ul>
+<li>ARB wanted to look at area sums</li>
+<li>With freeway and street data combined</li>
+<li>Can’t use CouchDB’s built-in map reduce</li>
+<li>Data in PostgreSQL and multiple CouchDBs</li>
+</ul>
+</section>
+<section id="use-node.js" class="slide level1">
+<h1>use Node.js!</h1>
+<ul>
+<li>get data from databases (map)</li>
+<li>sum it all up (reduce)</li>
+</ul>
+</section>
+<section id="logic" class="slide level1">
+<h1>Logic</h1>
+<ol type="1">
+<li>Get the grids in a county</li>
+<li><p>For each grid, year</p>
+<ol type="1">
+<li>get the hourly fwy data</li>
+<li>get the AADT from each road in the grid</li>
+<li>get the hourly variation</li>
+<li>multiply 2 and 3</li>
+<li>sum 1 and 4</li>
+</ol></li>
+<li><p>put the result from line 5 in form 1040 line 21 and read paragraph 7</p></li>
+</ol>
+</section>
+<section id="version-1" class="slide level1">
+<h1>Version 1</h1>
+<ul>
+<li>use the async library</li>
+<li>lots of bells and whistles</li>
+<li>npm install async</li>
+</ul>
+</section>
+<section id="main-loop" class="slide level1">
+<h1>Main loop</h1>
+<pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="kw">var</span> async = <span class="fu">require</span>(<span class="st">&#39;async&#39;</span>)
+<span class="kw">var</span> config_okay = <span class="fu">require</span>(<span class="st">&#39;config_okay&#39;</span>)
+# ...<span class="fu">command</span> <span class="fu">line</span> <span class="ot">stuff</span>...
+<span class="kw">var</span> year = <span class="ot">argv</span>.<span class="fu">year</span>
+<span class="kw">var</span> area_type = <span class="ot">argv</span>.<span class="fu">area_type</span>
+
+<span class="fu">config_okay</span>(<span class="st">&#39;config.json&#39;</span>,<span class="kw">function</span>(err,conf){
+    <span class="fu">process_area_year</span>(conf,area_type,year,<span class="kw">function</span>(e){
+        <span class="kw">if</span>(e) <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">Error</span>(<span class="st">&#39;died&#39;</span>)
+        <span class="ot">console</span>.<span class="fu">log</span>(<span class="st">&#39;done&#39;</span>)
+    })
+})</code></pre>
+</section>
+<section id="processing" class="slide level1">
+<h1>Processing</h1>
+<pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="kw">var</span> jobs = <span class="ot">argv</span>.<span class="fu">jobs</span>
+<span class="kw">var</span> _ = <span class="fu">require</span>(<span class="st">&#39;lodash&#39;</span>)
+
+<span class="kw">function</span> <span class="fu">process_area_year</span>(config,area_type,year,cb){
+    <span class="kw">var</span> reduce_queue = <span class="ot">async</span>.<span class="fu">queue</span>(reducing_code,jobs)
+    <span class="ot">reduce_queue</span>.<span class="fu">drain</span> = <span class="kw">function</span>() {
+        <span class="kw">return</span> <span class="fu">cb</span>()
+    }
+    <span class="ot">_</span>.<span class="fu">each</span>(years,<span class="kw">function</span>(yr){
+        <span class="kw">var</span> tasks=
+            <span class="ot">_</span>.<span class="fu">map</span>(grid_records,<span class="kw">function</span>(membership,cell_id){
+                <span class="kw">return</span> {<span class="st">&#39;cell_id&#39;</span>:cell_id
+                       ,<span class="st">&#39;year&#39;</span>:yr
+                       ,<span class="st">&#39;options&#39;</span>:config
+                       ,<span class="st">&#39;area_type&#39;</span>:area_type
+                       ,<span class="st">&#39;area_name&#39;</span>:membership[area_type]
+                       }
+            });
+        <span class="kw">var</span> grouped_tasks = <span class="ot">_</span>.<span class="fu">groupBy</span>(tasks,<span class="kw">function</span>(t){
+                                <span class="kw">return</span> <span class="ot">t</span>.<span class="fu">area_name</span>
+                            })
+
+        <span class="ot">_</span>.<span class="fu">each</span>(grouped_tasks,<span class="kw">function</span>(tasks,group){
+            <span class="ot">console</span>.<span class="fu">log</span>({<span class="st">&#39;tasks.length&#39;</span>:<span class="ot">tasks</span>.<span class="fu">length</span>})
+            <span class="ot">reduce_queue</span>.<span class="fu">push</span>([tasks])
+        });
+        <span class="kw">return</span> <span class="kw">null</span>
+    });
+    <span class="kw">return</span> <span class="kw">null</span>
+}</code></pre>
+</section>
+<section id="what-is-a-reduce-function" class="slide level1">
+<h1>What is a reduce function?</h1>
+<blockquote>
+<p>The reduce() method applies a function against an accumulator and each value of the array (from left-to-right) has to reduce it to a single value.</p>
+</blockquote>
+</section>
+<section id="reduce-docs" class="slide level1">
+<h1>Reduce docs</h1>
+<p>Excellent write-up at <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/Reduce">https://developer.mozilla.org</a></p>
+</section>
+<section id="handle-the-couchdb-result" class="slide level1">
+<h1>handle the couchdb result</h1>
+<ul>
+<li>passed one year of hourly docs for one grid cell</li>
+<li>handler multiplies each hour by aadt, collects an annual summation</li>
+</ul>
+</section>
+<section id="streets" class="slide level1">
+<h1>“Streets”</h1>
+<pre><code>{
+   &quot;_id&quot;: &quot;100_223_2007-01-01 02:00&quot;,
+   &quot;_rev&quot;: &quot;1-e1f162eeb6a9980b62a6d97f300fa46d&quot;,
+   &quot;i_cell&quot;: 100,
+   &quot;j_cell&quot;: 223,
+   &quot;aadt_frac&quot;: {
+       &quot;n&quot;: 0.022545,
+       &quot;hh&quot;: 0.030324,
+       &quot;nhh&quot;: 0.025502
+   },
+   &quot;ts&quot;: &quot;2007-01-01 02:00&quot;,
+   &quot;geom_id&quot;: &quot;100_223&quot;
+}</code></pre>
+</section>
+<section id="freeways" class="slide level1">
+<h1>Freeways</h1>
+<pre><code>{
+   &quot;_id&quot;: &quot;122_184_2007-01-01 05:00&quot;,
+   &quot;_rev&quot;: &quot;1-328420027e1bd4925e676a46ea375771&quot;,
+   &quot;geom_id&quot;: &quot;122_184&quot;,
+   &quot;i_cell&quot;: 122,
+   &quot;j_cell&quot;: 184,
+   &quot;data&quot;: [
+       &quot;2007-01-01 05:00&quot;, &quot;101&quot;, 1592.7,
+        268.43, 177.71, 0.01, 67.89,
+        50.99, 5.05, 60.58,
+        16.3,  2.3,  59.4,
+        5.49, 16.48, 2,
+       &quot;401602&quot;, &quot;401609&quot;
+   ],
+   &quot;aadt_frac&quot;: {
+       &quot;n&quot;: 0.005267,
+       &quot;hh&quot;: 0.020117,
+       &quot;not_hh&quot;: 0.013180
+   }
+}</code></pre>
+</section>
+<section id="header-document" class="slide level1">
+<h1>“Header” document</h1>
+<pre><code>{
+   &quot;_id&quot;: &quot;header&quot;,
+   &quot;_rev&quot;: &quot;2-3faf29e8ba8588d3067f7fa28fb169e1&quot;,
+   &quot;unmapper&quot;: {
+   },
+   &quot;header&quot;: [
+       &quot;ts&quot;,&quot;freeway&quot;,&quot;n&quot;,
+       &quot;hh&quot;,&quot;not_hh&quot;,&quot;o&quot;,&quot;avg_veh_spd&quot;,
+       &quot;avg_hh_weight&quot;,&quot;avg_hh_axles&quot;,&quot;avg_hh_spd&quot;,
+       &quot;avg_nh_weight&quot;,&quot;avg_nh_axles&quot;,&quot;avg_nh_spd&quot;,
+       &quot;miles&quot;,&quot;lane_miles&quot;,&quot;detector_count&quot;,
+       &quot;detectors&quot;
+   ]
+}</code></pre>
+</section>
+<section class="slide level1">
+
+<pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="co">// var task = current job details</span>
+<span class="kw">function</span> <span class="fu">handle_couch_result</span>(err,docs){
+    <span class="kw">if</span>(err) <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">Error</span>(err)
+    <span class="ot">task</span>.<span class="fu">hpms_fractions</span> = {}
+    <span class="kw">var</span> hours = <span class="dv">0</span>
+    <span class="kw">var</span> sums = {} <span class="co">// sum for each road type for entire yr</span>
+    <span class="kw">if</span>(<span class="ot">task</span>.<span class="fu">hpms_fractions_sums</span>){
+        sums = <span class="ot">task</span>.<span class="fu">hpms_fractions_sums</span>
+    }
+    <span class="kw">if</span>(<span class="ot">task</span>.<span class="fu">hpms_fractions_hours</span> === <span class="kw">undefined</span>){
+        <span class="ot">task</span>.<span class="fu">hpms_fractions_hours</span> = <span class="dv">0</span>
+    }
+    <span class="kw">if</span>(docs !== <span class="kw">undefined</span>
+     &amp;&amp; <span class="ot">docs</span>.<span class="fu">rows</span> !== <span class="kw">undefined</span>
+     &amp;&amp; <span class="ot">docs</span>.<span class="ot">rows</span>.<span class="fu">length</span>&gt;<span class="dv">0</span>){
+        <span class="ot">_</span>.<span class="fu">each</span>(<span class="ot">docs</span>.<span class="fu">rows</span>[<span class="dv">0</span>].<span class="ot">doc</span>.<span class="fu">aadt_frac</span>
+              ,<span class="kw">function</span>(v,k){
+                   <span class="kw">if</span>(sums[k] === <span class="kw">undefined</span>){
+                       sums[k]=+<span class="dv">0</span>
+                   }
+               });
+
+        <span class="ot">_</span>.<span class="fu">each</span>(<span class="ot">docs</span>.<span class="fu">rows</span>,<span class="kw">function</span>(row){
+            <span class="ot">task</span>.<span class="fu">hpms_fractions</span>[<span class="ot">row</span>.<span class="ot">doc</span>.<span class="fu">ts</span>]={}
+            hours++
+            <span class="ot">_</span>.<span class="fu">each</span>(<span class="ot">row</span>.<span class="ot">doc</span>.<span class="fu">aadt_frac</span>,<span class="kw">function</span>(v,k){
+                <span class="kw">if</span>(!v) v = <span class="dv">0</span> <span class="co">// force null, undefined to be zero</span>
+                <span class="ot">task</span>.<span class="fu">hpms_fractions</span>[<span class="ot">row</span>.<span class="ot">doc</span>.<span class="fu">ts</span>][k]=+v
+                sums[k]+=+v
+            })
+        });
+    }<span class="kw">else</span>{
+        <span class="kw">if</span>(<span class="ot">docs</span>.<span class="fu">error</span> !== <span class="kw">undefined</span>){
+            <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">Error</span>(docs)
+        }
+    }
+    <span class="ot">task</span>.<span class="fu">hpms_fractions_sums</span>=sums
+    <span class="ot">task</span>.<span class="fu">hpms_fractions_hours</span> = <span class="ot">task</span>.<span class="fu">hpms_fractions_hours</span> &gt; hours ?
+        <span class="ot">task</span>.<span class="fu">hpms_fractions_hours</span> : hours
+    <span class="kw">return</span> <span class="fu">cb</span>(<span class="kw">null</span>,task)
+}</code></pre>
+</section>
+    </div>
+  </div>
+
+
+  <script src="/home/james/repos/reveal.js/lib/js/head.min.js"></script>
+  <script src="/home/james/repos/reveal.js/js/reveal.js"></script>
+
+  <script>
+
+      // Full list of configuration options available here:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+        theme: 'sky', // available themes are in /css/theme
+        transition: 'fade', // default/cube/page/concave/zoom/linear/fade/none
+
+        // Optional libraries used to extend on reveal.js
+        dependencies: [
+          { src: '/home/james/repos/reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+          { src: '/home/james/repos/reveal.js/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+          { src: '/home/james/repos/reveal.js/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } },
+//          { src: '/home/james/repos/reveal.js/plugin/search/search.js', async: true, condition: function() { return !!document.body.classList; }, }
+//          { src: '/home/james/repos/reveal.js/plugin/remotes/remotes.js', async: true, condition: function() { return !!document.body.classList; } }
+]});
+    </script>
+    </body>
+</html>
