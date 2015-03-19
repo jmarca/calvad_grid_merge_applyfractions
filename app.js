@@ -179,22 +179,25 @@ function reducing_code(tasks,reducing_callback){
     return null
 }
 
-function process_area_year(config,area_type,yr,cb){
+function process_area_year(config,area_type,yr,area_year_cb){
     // work on one thing at a time here. do multiple jobs inside loop
 
     console.log(area_type,yr)
     var groups = {}
-    var tasks=
-        _.map(grid_records,function(membership,cell_id){
+    var tasks=[]
+    _.forEach(grid_records,function(membership,cell_id){
+        if(membership[area_type] && membership[area_type] !== undefined){
             var t = {'cell_id':cell_id
-                   ,'year':yr
-                   ,'options':config
-                   ,'area_type':area_type
-                   ,'area_name':membership[area_type]
-                   }
+                     ,'year':yr
+                     ,'options':config
+                     ,'area_type':area_type
+                     ,'area_name':membership[area_type]
+                    }
             groups[flatten.make_id(t)]=t.area_name
-            return t
-        });
+            tasks.push(t)
+        }
+        return null
+    });
     var grouped_tasks = _.groupBy(tasks,function(t){
                             return t.area_name
                         })
@@ -202,7 +205,7 @@ function process_area_year(config,area_type,yr,cb){
     console.log({'all areas':Object.keys(grouped_tasks)})
 
     // how to skip tasks:
-    var qgroups = queue()
+    var qgroups = queue(5)
 
     if(recheck){
        qgroups.defer(function(cb){ return cb() })
@@ -211,14 +214,14 @@ function process_area_year(config,area_type,yr,cb){
             // check if the doc is aready in the db
             var _c = {options:config}
             _c.doc={'id':docid}
-            qgroups.defer(function(cb){
+            qgroups.defer(function(qgroups_cb){
                 cdb_interactions.check_results_doc(_c,function(e,r){
                     if(r){
                         // truthy r means we're done with this one
                         console.log('skipping ',docid)
                         delete grouped_tasks[area_name]
                     }
-                    return cb()
+                    return qgroups_cb()
                 })
                 return null
             })
@@ -235,7 +238,7 @@ function process_area_year(config,area_type,yr,cb){
         });
         q.await(function(e){
             console.log('done with work for ',area_type,yr)
-            return cb(e)
+            return area_year_cb(e)
         })
         return null
     })
