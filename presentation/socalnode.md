@@ -420,7 +420,7 @@ function area_handler(tasks,reducing_callback){
     })
 ```
 
-# Even stupider!
+# Even more stupider!
 
 * This time I collected *everything*
 * then reduced
