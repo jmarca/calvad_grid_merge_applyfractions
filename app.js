@@ -135,26 +135,12 @@ function reducing_code(tasks,reducing_callback){
     var gridq = queue(1)
 
     var memo = {}
-    function clean_and_compress(item,cb){
-        reduce.reduce(memo,item,function(e,m){
-            //cleanup
-            var c = item.cell_id
-            _.each(item,function(v,k){
-                delete(item[k])
-            });
-            console.log('cleaned '+c)
-
-            return cb(null)
-        });
-        return null;
-    }
-
     tasks.forEach(function(t){
+        var task_copy = _.clone(t,true)
         gridq.defer(function(cb){
-            handler(t,function(e,t2){
+            handler(task_copy,function(e,t2){
                 console.log('handled '+t2.cell_id)
-                clean_and_compress(t2,cb)
-                return null
+                reduce.reduce(memo,t2,cb)
             });
             return null
         })
