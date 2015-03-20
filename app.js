@@ -9,40 +9,37 @@
  *
  */
 
-var util  = require('util')
-var spawn = require('child_process').spawn
-var path = require('path')
-var fs = require('fs')
-var queue = require('queue-async')
-var _ = require('lodash')
+"use strict";
+let util  = require('util')
+let spawn = require('child_process').spawn
+let path = require('path')
+let fs = require('fs')
 
-var config_okay = require('config_okay')
+let config_okay = require('config_okay')
 
 
-var reduce = require('./lib/reduce')
-var routes = require('./lib/routes.js')
-var flatten = require('./lib/flatten')
-var flatten_records = flatten.flatten_records
-var cdb_interactions = require('calvad_grid_merge_couchdbquery')
-var put_results_doc = cdb_interactions.put_results_doc
-var check_results_doc = cdb_interactions.check_results_doc
-if(check_results_doc===undefined){
-    croak;
-}
-var areatypes=['county','airbasin','airdistrict']
+let reduce = require('./lib/reduce')
+let routes = require('./lib/routes.js')
+let flatten = require('./lib/flatten')
+let flatten_records = flatten.flatten_records
+let cdb_interactions = require('calvad_grid_merge_couchdbquery')
+let put_results_doc = cdb_interactions.put_results_doc
+let check_results_doc = cdb_interactions.check_results_doc
+
+let areatypes=['county','airbasin','airdistrict']
 
 // make this a command line thing
 
-var env = process.env
+let env = process.env
 
-var rootdir = path.normalize(__dirname)
-var hpmsfiles = [rootdir+'/public/hpms2007.json',
+let rootdir = path.normalize(__dirname)
+let hpmsfiles = [rootdir+'/public/hpms2007.json',
                  rootdir+'/public/hpms2008.json',
                  rootdir+'/public/hpms2009.json'
                 ]
 
-var optimist = require('optimist')
-var argv = optimist
+let optimist = require('optimist')
+let argv = optimist
            .usage('merge the HPMS AADT values with hourly detector imputations/measurements using the hourly grid aadt fraction computed by the code in grid_data.\nUsage: $0')
            .options('j',{'default':1
                         ,'alias': 'jobs'
@@ -50,7 +47,6 @@ var argv = optimist
                         })
            .options('y',{'demand':true
                         ,'alias':'year'
-                        ,'default':[2007,2008,2009]
                         ,describe:'One or more years to process.  Specify multiple years as --year 2007 --year 2008.  If you say nothing, 2007. 2008. and 2009 will be run'
                         })
            .options("h", {'alias':'help'
@@ -72,32 +68,51 @@ var argv = optimist
 ;
 if (argv.help){
     optimist.showHelp();
-    return null
+    process.exit()
 }
 
 
-var recheck=argv.recheck
-
-var options = {statedb:argv.statedb}
-var years = _.flatten([argv.year])
-hpmsfiles = _.flatten([argv.hpmsfile])
-areatypes = _.flatten([argv.areatype])
-
-var jobs = argv.jobs
+let jobs = argv.jobs
+let recheck=argv.recheck
+let options = {statedb:argv.statedb}
+let years = [].concat(argv.year)
+hpmsfiles = [].concat(argv.hpmsfile)
+areatypes = [].concat(argv.areatype)
 
 
-var grid_records= require('calvad_areas').grid_records
+let grid_records = require('calvad_areas').grid_records
+
+function run( gen, iter) {
+    (iter=gen( function(err, data){
+              (err && iter.raise(err)) ||
+                  iter.next(data)
+          })
+    ).next();
+}
+
+run(function* (resume) {
+    var contents = yield fs.readFile(path, resume);
+    console.log(contents);
+});
 
 
-var hpmsgrids = {}
+function* reader(files){
+    files.forEach(function(f){
+        fs.readFile(f,{'encoding':'utf8'},function(e,data){
+
+        })
+    })
+
+}
+
+let hpmsgrids = {}
 function prepwork(cb){
     // preload the hpms files
-    var q = queue()
-    hpmsfiles.forEach(function(f){q.defer(fs.readFile,f,{'encoding':'utf8'})})
+    hpmsfiles.forEach(function(f){q.defer()})
     q.awaitAll(function(e,data){
         // data is an array of file contents, one per file
         hpmsfiles.forEach(function(f,idx){
-            var year = (/(\d\d\d\d)/.exec(f))[1]
+            let year = (/(\d\d\d\d)/.exec(f))[1]
             if(!year){ throw new Error('problem with file: '+f+'.  Must be in form "hpms2008.json"')}
             // rejigger the json data for faster lookups
 
@@ -111,19 +126,19 @@ function prepwork(cb){
 }
 
 function reducing_code(tasks,reducing_callback){
-    var options = _.clone(tasks[0].options)
-    var area_type = tasks[0].area_type
-    var area_name = tasks[0].area_name
-    var year = tasks[0].year
-    var grid_cells = _.pluck(tasks,'cell_id')
+    let options = _.clone(tasks[0].options)
+    let area_type = tasks[0].area_type
+    let area_name = tasks[0].area_name
+    let year = tasks[0].year
+    let grid_cells = _.pluck(tasks,'cell_id')
 
     if(hpmsgrids[year]===undefined){
         throw new Error('hpmsgrids not defined for ',year)
     }
 
-    var handler = routes.fractions_handler(hpmsgrids[year])
+    let handler = routes.fractions_handler(hpmsgrids[year])
 
-    var finish_task = {'area_type':area_type
+    let finish_task = {'area_type':area_type
                       ,'area_name':area_name
                       ,'year':year
                       }
@@ -132,13 +147,13 @@ function reducing_code(tasks,reducing_callback){
 
     finish_task.grid_cells= grid_cells
 
-    var gridq = queue(1)
+    let gridq = queue(1)
 
-    var memo = {}
+    let memo = {}
     function clean_and_compress(item,cb){
         reduce.reduce(memo,item,function(e,m){
             //cleanup
-            var c = item.cell_id
+            let c = item.cell_id
             _.each(item,function(v,k){
                 delete(item[k])
             });
@@ -183,11 +198,11 @@ function process_area_year(config,area_type,yr,area_year_cb){
     // work on one thing at a time here. do multiple jobs inside loop
 
     console.log(area_type,yr)
-    var groups = {}
-    var tasks=[]
+    let groups = {}
+    let tasks=[]
     _.forEach(grid_records,function(membership,cell_id){
         if(membership[area_type] && membership[area_type] !== undefined){
-            var t = {'cell_id':cell_id
+            let t = {'cell_id':cell_id
                      ,'year':yr
                      ,'options':config
                      ,'area_type':area_type
@@ -198,21 +213,21 @@ function process_area_year(config,area_type,yr,area_year_cb){
         }
         return null
     });
-    var grouped_tasks = _.groupBy(tasks,function(t){
+    let grouped_tasks = _.groupBy(tasks,function(t){
                             return t.area_name
                         })
 
     console.log({'all areas':Object.keys(grouped_tasks)})
 
     // how to skip tasks:
-    var qgroups = queue(5)
+    let qgroups = queue(5)
 
     if(recheck){
        qgroups.defer(function(cb){ return cb() })
     }else{
         _.forEach(groups,function(area_name,docid){
             // check if the doc is aready in the db
-            var _c = {options:config}
+            let _c = {options:config}
             _c.doc={'id':docid}
             qgroups.defer(function(qgroups_cb){
                 cdb_interactions.check_results_doc(_c,function(e,r){
@@ -230,7 +245,7 @@ function process_area_year(config,area_type,yr,area_year_cb){
     }
     qgroups.await(function(e,res){
         console.log({'going to process ':Object.keys(grouped_tasks)})
-        var q = queue(1)
+        let q = queue(1)
         _.each(grouped_tasks,function(tasks,group){
             console.log({'tasks.length':tasks.length})
             q.defer(reducing_code,tasks)
@@ -244,10 +259,9 @@ function process_area_year(config,area_type,yr,area_year_cb){
     })
 }
 
-var rootdir = path.normalize(__dirname)
-var config_file = rootdir+'/config.json'
+let config_file = rootdir+'/config.json'
 config_okay(config_file,function(err,c){
-    var q = queue(1)
+    let q = queue(1)
     if(err){throw new Error(err)}
     q.defer(prepwork)
     years.forEach(function(yr){
