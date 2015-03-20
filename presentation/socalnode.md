@@ -161,7 +161,7 @@ function process_area_year(config,area_type,year,cb){
 }
 ```
 
-# What is a reduce function?
+# reduce function?
 
 > The reduce() method applies a function against an accumulator and
 > each value of the array (from left-to-right) has to reduce it to a
@@ -229,7 +229,7 @@ function area_handler(tasks,reducing_callback){
 }
 ```
 
-# processing_waterfall
+# waterfall
 
 ```javascript
 function processing_waterfall(task,callback){
@@ -265,7 +265,7 @@ function processing_waterfall(task,callback){
 * In practice, each task item (one grid's state) gets large
 
 
-# The waterfall ends up in the real reducing function
+# reduce
 
 ```javascript
 function reduce(memo,item,callback){
@@ -312,7 +312,7 @@ function reduce(memo,item,callback){
 }
 ```
 
-# The waterfall ends up in the real reducing function
+# reduce
 
 ```javascript
 function reduce(memo,item,callback){
@@ -344,7 +344,7 @@ with hour by hour data on traffic flow still being referenced
 * It's why I stopped programming in 68000 assembly language
 * But it was needed here
 
-# clean out each task
+# clean up
 
 ```javascript
 function area_handler(tasks,reducing_callback){
