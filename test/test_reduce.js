@@ -72,7 +72,6 @@ describe('reduce',function(){
                                    ,'Urban Other Principal Arterial (OPA)'
                                    ,'Urban Minor Arterial (MA)'
                                    ,'Urban Collector (COL)'
-                                   ,'hpms_totals'
                                    ])
                 _.each(v,function(vv,road_type){
                     if(road_type === 'detector_based'){
