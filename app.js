@@ -163,6 +163,7 @@ function reducing_code(tasks,reducing_callback){
     gridq.awaitAll(function(e,results){
 
         finish_task.result = memo
+        // flatten strictly flattens.  No summing or aggregating
         flatten_records(finish_task,function(e,t){
             console.log('going to save')
             put_results_doc({options:options
