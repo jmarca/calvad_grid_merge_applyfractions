@@ -140,4 +140,37 @@ describe('apply fractions route',function(){
         })
         return null;
     })
+    it('should not crash on no work',function(done){
+        var task ={'options':options
+                  ,'cell_id':'100_222'
+                  ,'year':2008
+                  }
+        var handler = routes.fractions_handler(hpmsgrids['2008'])
+        queue()
+        .defer(handler,task)
+        .await(function(e,d){
+            should.not.exist(e)
+            var len = Object.keys(task.accum).length
+            len.should.equal(0)
+            _.each(task.accum,function(v,k){
+                var totals = v.totals
+                Object.keys(v).forEach(function(key){
+                    if(key === 'totals') return null
+                    var record  = v[key]
+                    _.each(record,function(vv,kk){
+                        // totals should decrement down to zero
+                        totals[kk] -= vv
+                        return null
+                    });
+                    return null
+                })
+                _.each(totals,function(v){
+                    v.should.be.approximately(0,0.01) // not exact
+                    return null
+                });
+            });
+            return done()
+        })
+        return null;
+    })
 })
