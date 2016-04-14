@@ -100,12 +100,11 @@ function prepwork(cb){
             var year = (/(\d\d\d\d)/.exec(f))[1]
             if(!year){ throw new Error('problem with file: '+f+'.  Must be in form "hpms2008.json"')}
             // rejigger the json data for faster lookups
-
+            console.log(data[idx].length)
             hpmsgrids[year] = routes.process_hpms_data(JSON.parse(data[idx]))
-
-            return cb(null,hpmsgrids)
+            return null
         })
-        return null
+        return cb(null,hpmsgrids)
     })
     return null
 }
@@ -115,10 +114,13 @@ function reducing_code(tasks,reducing_callback){
     var area_type = tasks[0].area_type
     var area_name = tasks[0].area_name
     var year = tasks[0].year
+
     var grid_cells = _.map(tasks,'cell_id')
+    console.log(area_type,area_name,year,grid_cells.length)
 
     if(hpmsgrids[year]===undefined){
-        throw new Error('hpmsgrids not defined for ',year)
+        console.log('hpmsgrids not defined for ',year)
+        throw new Error('croak')
     }
 
     var handler = routes.fractions_handler(hpmsgrids[year])
@@ -250,12 +252,18 @@ var config_file = rootdir+'/config.json'
 config_okay(config_file,function(err,c){
     var q = queue(1)
     if(err){throw new Error(err)}
-    q.defer(prepwork)
-    years.forEach(function(yr){
-        areatypes.forEach(function(areatype){
-            console.log(areatype)
-            q.defer(process_area_year,c,areatype,yr)
+    prepwork(function(e,hpmsgrids){
+        years.forEach(function(yr){
+            areatypes.forEach(function(areatype){
+                console.log(areatype)
+                q.defer(process_area_year,c,areatype,yr)
+                return null
+            })
             return null
+        })
+        q.await(function(e,r){
+            if(e) console.log('broke')
+            console.log('done')
         })
         return null
     })
