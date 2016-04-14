@@ -115,7 +115,7 @@ function reducing_code(tasks,reducing_callback){
     var area_type = tasks[0].area_type
     var area_name = tasks[0].area_name
     var year = tasks[0].year
-    var grid_cells = _.pluck(tasks,'cell_id')
+    var grid_cells = _.map(tasks,'cell_id')
 
     if(hpmsgrids[year]===undefined){
         throw new Error('hpmsgrids not defined for ',year)
