@@ -18,7 +18,7 @@ var utils = require('./utils')
 var path = require('path')
 var rootdir = path.normalize(__dirname)
 var config_file = rootdir+'/../test.config.json'
-var hpmsfile = rootdir+'/files/hpms2012.json'
+var hpmsfile = rootdir+'/files/hpms2012_reduced.json'
 var hpmsgrids={'2012':{}}
 
 var config_okay = require('config_okay')
