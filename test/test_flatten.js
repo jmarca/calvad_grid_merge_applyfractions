@@ -32,7 +32,7 @@ var test_db_unique = date.getHours()+'-'
                    + date.getSeconds()+'-'
                    + date.getMilliseconds()
 
-var hpmsfile = rootdir+'/files/hpms2008.json'
+var hpmsfile = rootdir+'/files/hpms2008_reduced.json'
 var hpmsgrids={'2008':{}}
 
 var options = {}

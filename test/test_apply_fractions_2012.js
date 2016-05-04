@@ -69,7 +69,6 @@ describe('apply fractions route',function(){
             should.not.exist(e)
             var len = Object.keys(task.accum).length
             len.should.equal(745)
-            console.log(task.accum)
             _.each(task.accum,function(v,k){
                 var totals = v.totals
                 Object.keys(v).forEach(function(key){

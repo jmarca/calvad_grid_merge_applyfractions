@@ -19,7 +19,7 @@ var utils = require('./utils')
 var path = require('path')
 var rootdir = path.normalize(__dirname)
 var config_file = rootdir+'/../test.config.json'
-var hpmsfile = rootdir+'/files/hpms2008.json'
+var hpmsfile = rootdir+'/files/hpms2008_reduced.json'
 var hpmsgrids={'2008':{}}
 
 var config_okay = require('config_okay')
@@ -84,7 +84,6 @@ describe('server route',function(){
                                                ,'Urban Other Principal Arterial (OPA)'
                                                ,'Urban Minor Arterial (MA)'
                                                ,'Urban Collector (COL)'
-                                               ,'hpms_totals'
                                                ])
                             _.each(v,function(vv,road_type){
                                 if(road_type === 'detector_based'){

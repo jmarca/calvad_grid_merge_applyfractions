@@ -18,7 +18,7 @@ var utils = require('./utils')
 var path = require('path')
 var rootdir = path.normalize(__dirname)
 var config_file = rootdir+'/../test.config.json'
-var hpmsfile = rootdir+'/files/hpms2008.json'
+var hpmsfile = rootdir+'/files/hpms2008_reduced.json'
 var hpmsgrids={'2008':{}}
 
 var config_okay = require('config_okay')
@@ -119,7 +119,6 @@ describe('apply fractions route',function(){
             should.not.exist(e)
             var len = Object.keys(task.accum).length
             len.should.equal(744)
-            console.log(task.accum)
             _.each(task.accum,function(v,k){
                 var totals = v.totals
                 Object.keys(v).forEach(function(key){
