@@ -66,6 +66,7 @@ function post_file(file,couch,doclen,cb){
 
 function load_hpms(task,cb){
     var db_files = ['./files/100_223_2008_JAN.json'
+                   ,'./files/100_223_2012_JAN_hpms.json'
                    ,'./files/178_97_2008_JAN.json'
                    ,'./files/134_163_2008_JAN.json']
     var cdb = [task.options.couchdb.host+':'+task.options.couchdb.port
@@ -75,7 +76,7 @@ function load_hpms(task,cb){
     db_files.forEach(function(file){
         q.defer(post_file,file,cdb,hpms_docs)
     })
-    q.await(function(err,d1,d2,d3){
+    q.await(function(err,d1,d2,d3,d4){
         should.not.exist(err)
         superagent.get(cdb)
         .type('json')
@@ -84,7 +85,7 @@ function load_hpms(task,cb){
             should.exist(r)
             r.should.have.property('text')
             var superagent_sucks = JSON.parse(r.text)
-            superagent_sucks.should.have.property('doc_count',d1+d2+d3)
+            superagent_sucks.should.have.property('doc_count',d1+d2+d3+d4)
             return cb()
 
         })
@@ -97,14 +98,15 @@ function load_detector(task,cb){
     var db_files = ['./files/132_164_2008_JAN.json'
                    ,'./files/132_164_2009_JAN.json'
                    ,'./files/189_72_2008_JAN.json'
-                   ,'./files/134_163_2008_JAN_detector.json']
+                    ,'./files/134_163_2008_JAN_detector.json'
+                    ,'./files/128_172_2012_JAN_detectors.json']
     var cdb = [task.options.couchdb.host+':'+task.options.couchdb.port
               ,task.options.couchdb.grid_merge_couchdbquery_detector_db].join('/')
     var q = queue()
     db_files.forEach(function(file){
         q.defer(post_file,file,cdb,detector_docs)
     })
-    q.await(function(err,d1,d2,d3,d4){
+    q.await(function(err,d1,d2,d3,d4,d5){
         should.not.exist(err)
         superagent.get(cdb)
         .type('json')
@@ -113,7 +115,7 @@ function load_detector(task,cb){
             should.exist(r)
             r.should.have.property('text')
             var superagent_sucks = JSON.parse(r.text)
-            superagent_sucks.should.have.property('doc_count',d1+d2+d3+d4)
+            superagent_sucks.should.have.property('doc_count',d1+d2+d3+d4+d5)
             return cb()
         })
         return null
