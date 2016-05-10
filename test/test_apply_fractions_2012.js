@@ -66,14 +66,17 @@ describe('apply fractions route',function(){
         queue()
         .defer(handler,task)
         .await(function(e,d){
+            var memo = {}
+            var len
             should.not.exist(e)
-            var len = Object.keys(task.accum).length
+            len = Object.keys(task.accum).length
             len.should.equal(745)
             _.each(task.accum,function(v,k){
                 var totals = v.totals
                 Object.keys(v).forEach(function(key){
+                    var record
                     if(key === 'totals') return null
-                    var record  = v[key]
+                    record  = v[key]
                     _.each(record,function(vv,kk){
                         // totals should decrement down to zero
                         totals[kk] -= vv
@@ -86,7 +89,23 @@ describe('apply fractions route',function(){
                     return null
                 });
             });
-            return done()
+
+            // test reduce too
+            reduce.reduce(memo,task,function(e,m){
+                var start = new Date('2012-01-01 00:00')
+                var end =  new Date('2012-02-01 00:00')
+
+                _.each(task,function(v,k){
+                    delete(task[k])
+                })
+
+                _.each(memo,function(v,ts){
+                    ts.should.be.instanceOf(String);
+                    (new Date(ts)).should.be.within(start,end)
+                    v.should.have.property('detector_based')
+                })
+                return done()
+            })
         })
         return null;
     })
