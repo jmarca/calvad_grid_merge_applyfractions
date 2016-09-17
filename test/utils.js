@@ -1,10 +1,16 @@
 /*global require exports */
 var superagent = require('superagent')
 
-var queue=require('queue-async')
+var queue=require('d3-queue').queue
 
 var _ = require('lodash')
 var should = require('should')
+var viewput = require('couchdb_put_view')
+var fs = require('fs')
+
+var hpms_docs=0
+var detector_docs=0
+
 
 function create_tempdb(task,db,cb){
     if(typeof db === 'function'){
@@ -39,9 +45,17 @@ function delete_tempdb(task,db,cb){
 }
 
 
-var hpms_docs=0
-var detector_docs=0
-
+function put_view(viewfile,config,cb){
+    fs.readFile(viewfile, function (err, data) {
+        var design_doc;
+        var opts;
+        if (err) throw err;
+        opts = _.assign({},config,{'doc':JSON.parse(data)})
+        viewput(opts,cb)
+        return null
+    })
+    return null
+}
 
 function post_file(file,couch,doclen,cb){
 
@@ -52,11 +66,10 @@ function post_file(file,couch,doclen,cb){
                      })
     doclen += docs.length
 
-
     superagent.post(couch+'/_bulk_docs')
     .type('json')
     .send({"docs":docs})
-    .end(function(e,r){
+        .end(function(e,r){
         should.not.exist(e)
         should.exist(r)
         return cb(null,doclen)
@@ -115,7 +128,7 @@ function load_detector(task,cb){
             should.exist(r)
             r.should.have.property('text')
             var superagent_sucks = JSON.parse(r.text)
-            superagent_sucks.should.have.property('doc_count',d1+d2+d3+d4+d5)
+            superagent_sucks.should.have.property('doc_count',d1+d2+d3+d4+d5+1)
             return cb()
         })
         return null
@@ -142,9 +155,12 @@ function demo_db_before(config){
         q.await(function(e){
             should.not.exist(e)
             queue()
-            .defer(load_hpms,task)
-            .defer(load_detector,task)
-            .await(done)
+                .defer(load_hpms,task)
+                .defer(load_detector,task)
+                .defer(put_view,
+                       './node_modules/calvad_grid_merge_couchdbquery/lib/couchdb_view.json',
+                       _.assign({},config.couchdb,{'db':dbs[0]}))
+                .await(done)
             return null
         })
         return null

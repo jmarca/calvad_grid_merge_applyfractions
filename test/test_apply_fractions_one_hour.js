@@ -5,11 +5,12 @@ var routes = require('../lib/routes.js')
 
 var queries = require('calvad_grid_merge_sqlquery')
 var hourlies = require('calvad_grid_merge_couchdbquery')
-var get_hpms_fractions = hourlies.get_hpms_fractions
-var post_process_couch_query = hourlies.post_process_couch_query
-var get_detector_fractions = hourlies.get_detector_fractions
+var get_hpms_fractions_one_hour = hourlies.get_hpms_fractions_one_hour
+var post_process_couch_query_one_hour = hourlies.post_process_couch_query_one_hour
+var get_detector_fractions_one_hour = hourlies.get_detector_fractions_one_hour
 var fs = require('fs')
 var _ = require('lodash')
+
 var queue = require('d3-queue').queue
 
 
@@ -52,29 +53,28 @@ before(function(done){
 })
 after(utils.demo_db_after(options))
 
-describe('apply fractions',function(){
+describe('apply fractions one hour',function(){
 
     it('should work',function(done){
-        var task ={'cell_id':'189_72'
-                  ,'year':2008
-                  }
-        task.options = options
-        var q = queue(4);
-        q.defer(get_detector_fractions,task)
-        q.defer(get_hpms_fractions,task)
+        var task = {'options':_.clone(options,true)
+                    ,'ts':"2008-01-21 18:00"
+                    ,'year':2008}
+        var q = queue(1)
+        q.defer(get_detector_fractions_one_hour,task)
+        q.defer(get_hpms_fractions_one_hour,task)
         q.await(function(e){
             should.not.exist(e)
             queue()
-            .defer(post_process_couch_query,task)
+            .defer(post_process_couch_query_one_hour,task)
             .await(function(ee){
-                task.aadt_store = hpmsgrids['2008']['189_72']
+                task.aadt_store = hpmsgrids['2008']
                 // now have fractions and aadt_store
                 reduce.apply_fractions(task,function(e){
                     should.not.exist(e)
                     // should be done
                     // run tests on it here
                     var len = Object.keys(task.accum).length
-                    len.should.equal(744)
+                    len.should.equal(3)
                     _.each(task.accum,function(v,k){
                         var totals = v.totals
                         Object.keys(v).forEach(function(key){
