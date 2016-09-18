@@ -115,7 +115,7 @@ describe('apply fractions one hour',function(){
             .await(function(ee){
                 task.aadt_store = hpmsgrids['2008']
                 // now have fractions and aadt_store
-                reduce.apply_fractions(task,function(e){
+                reduce.apply_fractions_one_hour(task,function(e){
                     should.not.exist(e)
                     // should be done
                     // run tests on it here
