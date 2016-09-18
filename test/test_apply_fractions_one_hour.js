@@ -152,13 +152,13 @@ describe('apply fractions one hour',function(){
 
 // same test, but for the route version
 
-describe('apply fractions route',function(){
+describe('apply fractions route_one_hour',function(){
     it('should work',function(done){
         var task ={'options':options
                   ,'cell_id':'189_72'
                   ,'year':2008
                   }
-        var handler = routes.fractions_handler(hpmsgrids['2008'])
+        var handler = routes.fractions_handler_one_hour(hpmsgrids['2008'])
         queue()
         .defer(handler,task)
         .await(function(e,d){
