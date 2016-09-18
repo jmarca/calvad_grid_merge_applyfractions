@@ -1,7 +1,7 @@
 var should=require('should')
 
 var reduce = require('../lib/reduce')
-var routes = require('../lib/routes.js')
+var routes = require('../lib/routes')
 
 var queries = require('calvad_grid_merge_sqlquery')
 var hourlies = require('calvad_grid_merge_couchdbquery')
@@ -69,12 +69,58 @@ describe('apply fractions one hour',function(){
             .await(function(ee){
                 task.aadt_store = hpmsgrids['2008']
                 // now have fractions and aadt_store
-                reduce.apply_fractions(task,function(e){
+                reduce.apply_fractions_one_hour(task,function(e){
                     should.not.exist(e)
                     // should be done
                     // run tests on it here
                     var len = Object.keys(task.accum).length
                     len.should.equal(3)
+                    _.each(task.accum,function(v,k){
+                        var totals = v.totals
+                        Object.keys(v).forEach(function(key){
+                            if(key === 'totals') return null
+                            var record  = v[key]
+                            _.each(record,function(vv,kk){
+                                // totals should decrement down to zero
+                                totals[kk] -= vv
+                                return null
+                            });
+                            return null
+                        })
+                        _.each(totals,function(v){
+                            v.should.be.approximately(0,0.01) // not exact
+                            return null
+                        });
+                    });
+                    return done()
+                })
+                return null
+
+            })
+            return null
+        })
+        return null
+    })
+    it('should work',function(done){
+        var task = {'options':_.clone(options,true)
+                    ,'ts':"2012-01-21 18:00"
+                    ,'year':2012}
+        var q = queue(1)
+        q.defer(get_detector_fractions_one_hour,task)
+        q.defer(get_hpms_fractions_one_hour,task)
+        q.await(function(e){
+            should.not.exist(e)
+            queue()
+            .defer(post_process_couch_query_one_hour,task)
+            .await(function(ee){
+                task.aadt_store = hpmsgrids['2008']
+                // now have fractions and aadt_store
+                reduce.apply_fractions(task,function(e){
+                    should.not.exist(e)
+                    // should be done
+                    // run tests on it here
+                    var len = Object.keys(task.accum).length
+                    len.should.equal(1)
                     _.each(task.accum,function(v,k){
                         var totals = v.totals
                         Object.keys(v).forEach(function(key){
