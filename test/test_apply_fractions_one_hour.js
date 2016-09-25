@@ -59,7 +59,7 @@ describe('apply fractions one hour',function(){
         var task = {'options':_.clone(options,true)
                     ,'ts':"2008-01-21 18:00"
                     ,'year':2008}
-        var q = queue(1)
+        var q = queue(2)
         q.defer(get_detector_fractions_one_hour,task)
         q.defer(get_hpms_fractions_one_hour,task)
         q.await(function(e){
@@ -73,8 +73,12 @@ describe('apply fractions one hour',function(){
                     should.not.exist(e)
                     // should be done
                     // run tests on it here
-                    var len = Object.keys(task.accum).length
-                    len.should.equal(3)
+                    //var len =
+                    Object.keys(task.accum).sort().should.eql(['132_164'
+                                                               ,'134_163'
+                                                               ,'189_72'
+                                                              ])
+
                     _.each(task.accum,function(v,k){
                         var totals = v.totals
                         Object.keys(v).forEach(function(key){
@@ -105,7 +109,7 @@ describe('apply fractions one hour',function(){
         var task = {'options':_.clone(options,true)
                     ,'ts':"2012-01-21 18:00"
                     ,'year':2012}
-        var q = queue(1)
+        var q = queue(2)
         q.defer(get_detector_fractions_one_hour,task)
         q.defer(get_hpms_fractions_one_hour,task)
         q.await(function(e){
@@ -155,8 +159,8 @@ describe('apply fractions one hour',function(){
 describe('apply fractions route_one_hour',function(){
     it('should work',function(done){
         var task ={'options':options
-                  ,'cell_id':'189_72'
-                  ,'year':2008
+                   ,'ts':"2008-01-21 18:00"
+                   ,'year':2008
                   }
         var handler = routes.fractions_handler_one_hour(hpmsgrids['2008'])
         queue()
@@ -164,7 +168,7 @@ describe('apply fractions route_one_hour',function(){
         .await(function(e,d){
             should.not.exist(e)
             var len = Object.keys(task.accum).length
-            len.should.equal(744)
+            len.should.equal(3)
             _.each(task.accum,function(v,k){
                 var totals = v.totals
                 Object.keys(v).forEach(function(key){
@@ -182,8 +186,9 @@ describe('apply fractions route_one_hour',function(){
                     return null
                 });
             });
+            // also check detector_data
             len = Object.keys(task.detector_data).length
-            len.should.equal(744)
+            len.should.equal(3)
 
             return done()
         })
