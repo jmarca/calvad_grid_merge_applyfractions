@@ -85,7 +85,7 @@ function load_hpms(task,cb){
     var cdb = [task.options.couchdb.host+':'+task.options.couchdb.port
               ,task.options.couchdb.grid_merge_couchdbquery_hpms_db].join('/')
 
-    var q = queue()
+    var q = queue(1)
     db_files.forEach(function(file){
         q.defer(post_file,file,cdb,hpms_docs)
     })
@@ -115,7 +115,7 @@ function load_detector(task,cb){
                     ,'./files/128_172_2012_JAN_detectors.json']
     var cdb = [task.options.couchdb.host+':'+task.options.couchdb.port
               ,task.options.couchdb.grid_merge_couchdbquery_detector_db].join('/')
-    var q = queue()
+    var q = queue(1)
     db_files.forEach(function(file){
         q.defer(post_file,file,cdb,detector_docs)
     })
@@ -128,7 +128,7 @@ function load_detector(task,cb){
             should.exist(r)
             r.should.have.property('text')
             var superagent_sucks = JSON.parse(r.text)
-            superagent_sucks.should.have.property('doc_count',d1+d2+d3+d4+d5+1)
+            superagent_sucks.should.have.property('doc_count',d1+d2+d3+d4+d5)
             return cb()
         })
         return null
@@ -154,13 +154,22 @@ function demo_db_before(config){
         })
         q.await(function(e){
             should.not.exist(e)
-            queue()
+            queue(1)
                 .defer(load_hpms,task)
                 .defer(load_detector,task)
                 .defer(put_view,
                        './node_modules/calvad_grid_merge_couchdbquery/lib/couchdb_view.json',
                        _.assign({},config.couchdb,{'db':dbs[0]}))
-                .await(done)
+                .defer(put_view,
+                       './node_modules/calvad_grid_merge_couchdbquery/lib/couchdb_hpms_view.json',
+                       _.assign({},config.couchdb,{'db':dbs[1]}))
+                .await(function(e,r){
+                    if(e){
+                        console.log(e)
+                        throw new Error(e)
+                    }
+                    return done(e,r)
+                })
             return null
         })
         return null
@@ -176,7 +185,7 @@ function demo_db_after(config){
                   ]
 
 
-        var q = queue()
+        var q = queue(1)
         dbs.forEach(function(db){
             if(!db) return null
             q.defer(delete_tempdb,task,db)
