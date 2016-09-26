@@ -70,12 +70,46 @@ var server_host = 'http://'+testhost + ':'+testport
 
 describe('server route',function(){
     it('should work',function(done){
-        request.get(server_host+'/hpms/data_by_hr/2008/01/22.json'
+        request.get(server_host+'/hpms/data_by_hr/2008/01/22/08.json'
                    ,function(e,r,b){
-                        // b is the output memo I want
-                        var memo = JSON.parse(b)
-                        Object.keys(memo).should.have.lengthOf(3)
-                        return done()
+                       // b is the output memo I want
+                       var memo = JSON.parse(b)
+                       //console.log(memo)
+                       Object.keys(memo).should.have.lengthOf(5)
+                       memo.should.have.keys('132_164'
+                                             ,'134_163'
+                                             ,'100_223'
+                                             ,'178_97'
+                                             ,'189_72'
+                                            );
+
+                       (memo['132_164']).should.have.keys('detector_based');
+                       // 132_164 not in reduced hpms file
+
+                       (memo['134_163']).should.have.keys(
+                           "detector_based"
+                           ,"Urban Other Principal Arterial (OPA)"
+                           ,"Urban Minor Arterial (MA)"
+                           ,"Urban Collector (COL)"
+                       );
+
+                       (memo['189_72']).should.have.keys(
+                           "detector_based"
+                           ,"Urban Other Principal Arterial (OPA)"
+                           ,"Urban Minor Arterial (MA)"
+                           ,"Urban Collector (COL)"
+                       );
+
+                       (memo['100_223']).should.have.keys(
+                           "Rural Minor Collector (MNC)"
+                       );
+
+                       (memo['178_97']).should.have.keys(
+                           "Rural Major Collector (MJC)"
+                           ,"Rural Minor Collector (MNC)"
+                       );
+
+                       return done()
 
                     })
         return null;
