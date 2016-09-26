@@ -14,7 +14,6 @@ var _ = require('lodash')
 var queue = require('d3-queue').queue
 
 
-
 var utils = require('./utils')
 var path = require('path')
 var rootdir = path.normalize(__dirname)
@@ -44,6 +43,7 @@ before(function(done){
         .defer(utils.demo_db_before(options))
         .await(function(e,hpmsdata,blahblah){
             should.not.exist(e)
+            if(e){throw new Error(e)}
             hpmsgrids['2008'] = routes.process_hpms_data(JSON.parse(hpmsdata))
             return done()
         })
@@ -51,17 +51,17 @@ before(function(done){
     })
     return null
 })
-after(utils.demo_db_after(options))
+//after(utils.demo_db_after(options))
 
 describe('apply fractions one hour',function(){
 
-    it('should work',function(done){
+    it('should work 2008',function(done){
         var task = {'options':_.clone(options,true)
                     ,'ts':"2008-01-21 18:00"
                     ,'year':2008}
-        var q = queue(2)
-        q.defer(get_detector_fractions_one_hour,task)
+        var q = queue()
         q.defer(get_hpms_fractions_one_hour,task)
+        q.defer(get_detector_fractions_one_hour,task)
         q.await(function(e){
             should.not.exist(e)
             queue()
@@ -69,13 +69,17 @@ describe('apply fractions one hour',function(){
             .await(function(ee){
                 task.aadt_store = hpmsgrids['2008']
                 // now have fractions and aadt_store
+                console.log('task before fractions',task)
                 reduce.apply_fractions_one_hour(task,function(e){
                     should.not.exist(e)
+                    console.log('task after fractions',task)
                     // should be done
                     // run tests on it here
                     //var len =
-                    Object.keys(task.accum).sort().should.eql(['132_164'
+                    Object.keys(task.accum).sort().should.eql(['100_223'
+                                                               ,'132_164'
                                                                ,'134_163'
+                                                               ,'178_97'
                                                                ,'189_72'
                                                               ])
 
@@ -105,7 +109,7 @@ describe('apply fractions one hour',function(){
         })
         return null
     })
-    it('should work',function(done){
+    it('should work 2012',function(done){
         var task = {'options':_.clone(options,true)
                     ,'ts':"2012-01-21 18:00"
                     ,'year':2012}
@@ -124,7 +128,7 @@ describe('apply fractions one hour',function(){
                     // should be done
                     // run tests on it here
                     var len = Object.keys(task.accum).length
-                    len.should.equal(1)
+                    len.should.equal(2)
                     _.each(task.accum,function(v,k){
                         var totals = v.totals
                         Object.keys(v).forEach(function(key){
@@ -162,13 +166,14 @@ describe('apply fractions route_one_hour',function(){
                    ,'ts':"2008-01-21 18:00"
                    ,'year':2008
                   }
-        var handler = routes.fractions_handler_one_hour(hpmsgrids['2008'])
+        var handler = routes.fractions_handler_one_hour
         queue()
-        .defer(handler,task)
+            .defer(handler,hpmsgrids['2008'],task)
         .await(function(e,d){
             should.not.exist(e)
+            console.log(task)
             var len = Object.keys(task.accum).length
-            len.should.equal(3)
+            len.should.equal(5)
             _.each(task.accum,function(v,k){
                 var totals = v.totals
                 Object.keys(v).forEach(function(key){
@@ -190,39 +195,6 @@ describe('apply fractions route_one_hour',function(){
             len = Object.keys(task.detector_data).length
             len.should.equal(3)
 
-            return done()
-        })
-        return null;
-    })
-    it('should not crash on no work',function(done){
-        var task ={'options':options
-                  ,'cell_id':'100_222'
-                  ,'year':2008
-                  }
-        var handler = routes.fractions_handler(hpmsgrids['2008'])
-        queue()
-        .defer(handler,task)
-        .await(function(e,d){
-            should.not.exist(e)
-            var len = Object.keys(task.accum).length
-            len.should.equal(0)
-            _.each(task.accum,function(v,k){
-                var totals = v.totals
-                Object.keys(v).forEach(function(key){
-                    if(key === 'totals') return null
-                    var record  = v[key]
-                    _.each(record,function(vv,kk){
-                        // totals should decrement down to zero
-                        totals[kk] -= vv
-                        return null
-                    });
-                    return null
-                })
-                _.each(totals,function(v){
-                    v.should.be.approximately(0,0.01) // not exact
-                    return null
-                });
-            });
             return done()
         })
         return null;
