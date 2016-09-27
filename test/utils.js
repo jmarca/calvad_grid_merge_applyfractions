@@ -1,10 +1,16 @@
 /*global require exports */
 var superagent = require('superagent')
 
-var queue=require('queue-async')
+var queue=require('d3-queue').queue
 
 var _ = require('lodash')
 var should = require('should')
+var viewput = require('couchdb_put_view')
+var fs = require('fs')
+
+var hpms_docs=0
+var detector_docs=0
+
 
 function create_tempdb(task,db,cb){
     if(typeof db === 'function'){
@@ -39,9 +45,17 @@ function delete_tempdb(task,db,cb){
 }
 
 
-var hpms_docs=0
-var detector_docs=0
-
+function put_view(viewfile,config,cb){
+    fs.readFile(viewfile, function (err, data) {
+        var design_doc;
+        var opts;
+        if (err) throw err;
+        opts = _.assign({},config,{'doc':JSON.parse(data)})
+        viewput(opts,cb)
+        return null
+    })
+    return null
+}
 
 function post_file(file,couch,doclen,cb){
 
@@ -52,11 +66,10 @@ function post_file(file,couch,doclen,cb){
                      })
     doclen += docs.length
 
-
     superagent.post(couch+'/_bulk_docs')
     .type('json')
     .send({"docs":docs})
-    .end(function(e,r){
+        .end(function(e,r){
         should.not.exist(e)
         should.exist(r)
         return cb(null,doclen)
@@ -72,7 +85,7 @@ function load_hpms(task,cb){
     var cdb = [task.options.couchdb.host+':'+task.options.couchdb.port
               ,task.options.couchdb.grid_merge_couchdbquery_hpms_db].join('/')
 
-    var q = queue()
+    var q = queue(1)
     db_files.forEach(function(file){
         q.defer(post_file,file,cdb,hpms_docs)
     })
@@ -102,7 +115,7 @@ function load_detector(task,cb){
                     ,'./files/128_172_2012_JAN_detectors.json']
     var cdb = [task.options.couchdb.host+':'+task.options.couchdb.port
               ,task.options.couchdb.grid_merge_couchdbquery_detector_db].join('/')
-    var q = queue()
+    var q = queue(1)
     db_files.forEach(function(file){
         q.defer(post_file,file,cdb,detector_docs)
     })
@@ -141,10 +154,22 @@ function demo_db_before(config){
         })
         q.await(function(e){
             should.not.exist(e)
-            queue()
-            .defer(load_hpms,task)
-            .defer(load_detector,task)
-            .await(done)
+            queue(1)
+                .defer(load_hpms,task)
+                .defer(load_detector,task)
+                .defer(put_view,
+                       './node_modules/calvad_grid_merge_couchdbquery/lib/couchdb_view.json',
+                       _.assign({},config.couchdb,{'db':dbs[0]}))
+                .defer(put_view,
+                       './node_modules/calvad_grid_merge_couchdbquery/lib/couchdb_hpms_view.json',
+                       _.assign({},config.couchdb,{'db':dbs[1]}))
+                .await(function(e,r){
+                    if(e){
+                        console.log(e)
+                        throw new Error(e)
+                    }
+                    return done(e,r)
+                })
             return null
         })
         return null
@@ -160,7 +185,7 @@ function demo_db_after(config){
                   ]
 
 
-        var q = queue()
+        var q = queue(1)
         dbs.forEach(function(db){
             if(!db) return null
             q.defer(delete_tempdb,task,db)

@@ -18,7 +18,7 @@ var config_okay = require('config_okay')
 
 var should = require('should')
 
-var queue = require('queue-async')
+var queue = require('d3-queue').queue
 var _ = require('lodash')
 var utils = require('./utils.js')
 var path = require('path')

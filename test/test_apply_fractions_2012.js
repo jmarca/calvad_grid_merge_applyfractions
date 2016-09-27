@@ -10,7 +10,7 @@ var post_process_couch_query = hourlies.post_process_couch_query
 var get_detector_fractions = hourlies.get_detector_fractions
 var fs = require('fs')
 var _ = require('lodash')
-var queue = require("queue-async")
+var queue = require('d3-queue').queue
 
 
 

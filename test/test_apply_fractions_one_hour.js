@@ -1,17 +1,17 @@
 var should=require('should')
 
 var reduce = require('../lib/reduce')
-var routes = require('../lib/routes.js')
+var routes = require('../lib/routes')
 
 var queries = require('calvad_grid_merge_sqlquery')
 var hourlies = require('calvad_grid_merge_couchdbquery')
-var get_hpms_fractions = hourlies.get_hpms_fractions
-var post_process_couch_query = hourlies.post_process_couch_query
-var get_detector_fractions = hourlies.get_detector_fractions
+var get_hpms_fractions_one_hour = hourlies.get_hpms_fractions_one_hour
+var post_process_couch_query_one_hour = hourlies.post_process_couch_query_one_hour
+var get_detector_fractions_one_hour = hourlies.get_detector_fractions_one_hour
 var fs = require('fs')
 var _ = require('lodash')
-var queue = require('d3-queue').queue
 
+var queue = require('d3-queue').queue
 
 
 var utils = require('./utils')
@@ -43,6 +43,7 @@ before(function(done){
         .defer(utils.demo_db_before(options))
         .await(function(e,hpmsdata,blahblah){
             should.not.exist(e)
+            if(e){throw new Error(e)}
             hpmsgrids['2008'] = routes.process_hpms_data(JSON.parse(hpmsdata))
             return done()
         })
@@ -50,31 +51,84 @@ before(function(done){
     })
     return null
 })
-after(utils.demo_db_after(options))
+//after(utils.demo_db_after(options))
 
-describe('apply fractions',function(){
+describe('apply fractions one hour',function(){
 
-    it('should work',function(done){
-        var task ={'cell_id':'189_72'
-                  ,'year':2008
-                  }
-        task.options = options
-        var q = queue(4);
-        q.defer(get_detector_fractions,task)
-        q.defer(get_hpms_fractions,task)
+    it('should work 2008',function(done){
+        var task = {'options':_.clone(options,true)
+                    ,'ts':"2008-01-21 18:00"
+                    ,'year':2008}
+        var q = queue()
+        q.defer(get_hpms_fractions_one_hour,task)
+        q.defer(get_detector_fractions_one_hour,task)
         q.await(function(e){
             should.not.exist(e)
             queue()
-            .defer(post_process_couch_query,task)
+            .defer(post_process_couch_query_one_hour,task)
             .await(function(ee){
-                task.aadt_store = hpmsgrids['2008']['189_72']
+                task.aadt_store = hpmsgrids['2008']
                 // now have fractions and aadt_store
-                reduce.apply_fractions(task,function(e){
+                console.log('task before fractions',task)
+                reduce.apply_fractions_one_hour(task,function(e){
+                    should.not.exist(e)
+                    console.log('task after fractions',task)
+                    // should be done
+                    // run tests on it here
+                    //var len =
+                    Object.keys(task.accum).sort().should.eql(['100_223'
+                                                               ,'132_164'
+                                                               ,'134_163'
+                                                               ,'178_97'
+                                                               ,'189_72'
+                                                              ])
+
+                    _.each(task.accum,function(v,k){
+                        var totals = v.totals
+                        Object.keys(v).forEach(function(key){
+                            if(key === 'totals') return null
+                            var record  = v[key]
+                            _.each(record,function(vv,kk){
+                                // totals should decrement down to zero
+                                totals[kk] -= vv
+                                return null
+                            });
+                            return null
+                        })
+                        _.each(totals,function(v){
+                            v.should.be.approximately(0,0.01) // not exact
+                            return null
+                        });
+                    });
+                    return done()
+                })
+                return null
+
+            })
+            return null
+        })
+        return null
+    })
+    it('should work 2012',function(done){
+        var task = {'options':_.clone(options,true)
+                    ,'ts':"2012-01-21 18:00"
+                    ,'year':2012}
+        var q = queue(2)
+        q.defer(get_detector_fractions_one_hour,task)
+        q.defer(get_hpms_fractions_one_hour,task)
+        q.await(function(e){
+            should.not.exist(e)
+            queue()
+            .defer(post_process_couch_query_one_hour,task)
+            .await(function(ee){
+                task.aadt_store = hpmsgrids['2008']
+                // now have fractions and aadt_store
+                reduce.apply_fractions_one_hour(task,function(e){
                     should.not.exist(e)
                     // should be done
                     // run tests on it here
                     var len = Object.keys(task.accum).length
-                    len.should.equal(744)
+                    len.should.equal(2)
                     _.each(task.accum,function(v,k){
                         var totals = v.totals
                         Object.keys(v).forEach(function(key){
@@ -106,19 +160,20 @@ describe('apply fractions',function(){
 
 // same test, but for the route version
 
-describe('apply fractions route',function(){
+describe('apply fractions route_one_hour',function(){
     it('should work',function(done){
         var task ={'options':options
-                  ,'cell_id':'189_72'
-                  ,'year':2008
+                   ,'ts':"2008-01-21 18:00"
+                   ,'year':2008
                   }
-        var handler = routes.fractions_handler(hpmsgrids['2008'])
+        var handler = routes.fractions_handler_one_hour
         queue()
-        .defer(handler,task)
+            .defer(handler,hpmsgrids['2008'],task)
         .await(function(e,d){
             should.not.exist(e)
+            console.log(task)
             var len = Object.keys(task.accum).length
-            len.should.equal(744)
+            len.should.equal(5)
             _.each(task.accum,function(v,k){
                 var totals = v.totals
                 Object.keys(v).forEach(function(key){
@@ -136,42 +191,10 @@ describe('apply fractions route',function(){
                     return null
                 });
             });
+            // also check detector_data
             len = Object.keys(task.detector_data).length
-            len.should.equal(744)
+            len.should.equal(3)
 
-            return done()
-        })
-        return null;
-    })
-    it('should not crash on no work',function(done){
-        var task ={'options':options
-                  ,'cell_id':'100_222'
-                  ,'year':2008
-                  }
-        var handler = routes.fractions_handler(hpmsgrids['2008'])
-        queue()
-        .defer(handler,task)
-        .await(function(e,d){
-            should.not.exist(e)
-            var len = Object.keys(task.accum).length
-            len.should.equal(0)
-            _.each(task.accum,function(v,k){
-                var totals = v.totals
-                Object.keys(v).forEach(function(key){
-                    if(key === 'totals') return null
-                    var record  = v[key]
-                    _.each(record,function(vv,kk){
-                        // totals should decrement down to zero
-                        totals[kk] -= vv
-                        return null
-                    });
-                    return null
-                })
-                _.each(totals,function(v){
-                    v.should.be.approximately(0,0.01) // not exact
-                    return null
-                });
-            });
             return done()
         })
         return null;
