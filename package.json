@@ -1,6 +1,6 @@
 {
   "name": "calvad_grid_merge_applyfractions",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Code extracted from calvad_grid_merge for accessing couchdb data",
   "main": "index.js",
   "scripts": {
@@ -31,7 +31,6 @@
     "calvad_areas": "git://github.com/jmarca/calvad_areas.git",
     "calvad_compute_aadt": "git://github.com/jmarca/calvad_compute_aadt.git",
     "calvad_grid_merge_couchdbquery": "git://github.com/jmarca/calvad_grid_merge_couchdbquery",
-    "calvad_grid_merge_sqlquery": "git://github.com/jmarca/calvad_grid_merge_sqlquery",
     "config_okay": "",
     "couch_check_state": "git://github.com/jmarca/couch_check_state.git",
     "couch_set_state": "git://github.com/jmarca/couch_set_state.git",
