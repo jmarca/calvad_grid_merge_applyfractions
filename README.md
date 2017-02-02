@@ -50,3 +50,7 @@ For example (with usernames and passwords obviously needing to be changed):
 
 }
 ```
+
+After running app.js, the summed up area values will get stored in
+CouchDB, in the directory specified in the config file under
+`couchdb.grid_merge_couchdbquery_put_db`.

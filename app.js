@@ -46,10 +46,11 @@ var hpmsfiles = [rootdir+'/public/hpms2007.json'
                  ,rootdir+'/public/hpms2014.json'
                  ,rootdir+'/public/hpms2015.json'
                 ]
+var config_file = rootdir+'/config.json'
 
 var optimist = require('optimist')
 var argv = optimist
-           .usage('merge the HPMS AADT values with hourly detector imputations/measurements using the hourly grid aadt fraction computed by the code in grid_data.\nUsage: $0')
+           .usage('merge the HPMS AADT values with hourly detector imputations/measurements using the hourly grid aadt fraction computed by the code in grid_data.  The result will be stored in CouchDB, the database specified in the config file under the entry couchdb.grid_merge_couchdbquery_put_db  \nUsage: $0')
            .options('j',{'default':1
                         ,'alias': 'jobs'
                         ,'describe':'How many simultaneous jobs to run.  try one, watch your RAM.  Default is one'
@@ -64,7 +65,7 @@ var argv = optimist
                          ,'type': "boolean"
                          ,'default': false
                          })
-           .options("recheck", {'describe': "redo all of the area names, not just the ones that aren't stored yet"
+           .options("recheck", {'describe': "Redo all of the area names, not just the ones that aren't stored yet. Default is to skip areas that are already stored."
                                 ,'type': "boolean"
                                 ,'default': false
                                })
@@ -253,8 +254,7 @@ function process_area_year(config,area_type,yr,area_year_cb){
     })
 }
 
-var rootdir = path.normalize(__dirname)
-var config_file = rootdir+'/config.json'
+
 config_okay(config_file,function(err,c){
     var q = queue(1)
     if(err){throw new Error(err)}
