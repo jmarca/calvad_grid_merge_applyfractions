@@ -39,7 +39,12 @@ var rootdir = path.normalize(__dirname)
 var hpmsfiles = [rootdir+'/public/hpms2007.json'
                  ,rootdir+'/public/hpms2008.json'
                  ,rootdir+'/public/hpms2009.json'
+                 //,rootdir+'/public/hpms2010.json'
+                 //,rootdir+'/public/hpms2011.json'
                  ,rootdir+'/public/hpms2012.json'
+                 //,rootdir+'/public/hpms2013.json'
+                 ,rootdir+'/public/hpms2014.json'
+                 ,rootdir+'/public/hpms2015.json'
                 ]
 
 var optimist = require('optimist')
@@ -51,8 +56,8 @@ var argv = optimist
                         })
            .options('y',{'demand':true
                         ,'alias':'year'
-                         ,'default':[2007,2008,2009,2012]
-                        ,describe:'One or more years to process.  Specify multiple years as --year 2007 --year 2008.  If you say nothing, 2007. 2008. and 2009 will be run'
+                         ,'default':[2007,2008,2009,2012,2014,2015]
+                        ,describe:'One or more years to process.  Specify multiple years as --year 2007 --year 2008.  If you say nothing, 2007, 2008, 2009, 2012, 2014, 2015 will be run'
                         })
            .options("h", {'alias':'help'
                          ,'describe': "display this hopefully helpful message"
@@ -64,10 +69,10 @@ var argv = optimist
                                 ,'default': false
                                })
            .options("hpms",{'alias':'hpmsfile'
-                        ,'describe':'previously formatted hpmsYEAR.json files.   Specify multiple files as --hpmsfile hpms2007.json --hpmsfile ../some/directory/hpms2008.json and so on.'
+                        ,'describe':'previously formatted hpmsYEAR.json files.   Specify multiple files as --hpmsfile hpms2007.json --hpmsfile ../some/directory/hpms2017.json and so on.'
                         ,'default':hpmsfiles})
            .options("area",{'alias':'areatype'
-                        ,'describe':'which area types to process.  defaults to [airbasin,county,airdistrict].  Specify multiple area types as --areatype county --areatype airbasin.  The values should not by anything except values specified in calvad_areas::cellmembership'
+                        ,'describe':'which area types to process.  defaults to [airbasin,county,airdistrict].  Specify multiple area types as --areatype county --areatype airbasin.  The values should ONLY be values specified in calvad_areas::cellmembership'
                         ,'default':areatypes})
            .argv
 ;
