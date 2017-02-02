@@ -1,4 +1,5 @@
 var should=require('should')
+var makedir = require('makedir').makedir
 
 
 var me = require('../.')
@@ -108,11 +109,58 @@ describe('server route',function(){
                            "Rural Major Collector (MJC)"
                            ,"Rural Minor Collector (MNC)"
                        );
-
-                       return done()
-
+                       fs.writeFile('08.json',b,'utf8',function(e){
+                           return done()
+                       })
+                       return null
                     })
         return null;
     })
-    it('should work for csv too')
+    it('should work for csv too',function (done){
+        request.get(server_host+'/hpms/data_by_hr/2008/01/22/09.csv'
+                   ,function(e,r,b){
+                       // b is the output memo I want
+                       should.not.exist(e)
+                       should.exist(b)
+                       return done()
+                   })
+    })
+    it('should work for a cached json to csv too',function (done){
+        var csv_10
+        request.get(server_host+'/hpms/data_by_hr/2008/01/22/10.csv'
+                    ,function(e,r,b){
+                        // b is the output memo I want
+                        should.not.exist(e)
+                        should.exist(b)
+                        csv_10 = b
+                        request.get(server_host+'/hpms/data_by_hr/2008/01/22/10.json'
+                                    ,function(e,r,b){
+                                        // b is the output memo I want
+                                        should.not.exist(e)
+                                        should.exist(b)
+                                        // put the json file in the expected cache spot
+                                        var p ='public/hpms/data_by_hr/2008/01/22'
+                                        makedir(p,function(emkdir){
+                                            should.not.exist(emkdir)
+                                            fs.writeFile(p+'/10.json',b,'utf8',function(e){
+                                                request.get(server_host+'/hpms/data_by_hr/2008/01/22/10.csv'
+                                                            ,function(e2,r2,b2){
+                                                                // bd is the output memo I want
+                                                                should.not.exist(e)
+                                                                should.exist(b2)
+                                                                b2.should.equal(csv_10)
+                                                                return done()
+                                                            })
+                                                return null
+                                            })
+                                            return null
+                                        })
+                                        return null
+                                    })
+                        return null
+                    })
+
+        return null
+    })
+
 })
